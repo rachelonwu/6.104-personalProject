@@ -60,6 +60,28 @@ describe("TaskTracking", () => {
     expect(concept._get({ task })[0]?.completed).toBe(true);
   });
 
+  test("reopen marks a completed task as incomplete", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Attend career fair",
+    });
+
+    concept.complete({ task });
+
+    expect(concept._get({ task })[0]?.completed).toBe(true);
+
+    concept.reopen({ task });
+
+    expect(concept._get({ task })[0]?.completed).toBe(false);
+
+    concept.complete({ task });
+
+    expect(concept._get({ task })[0]?.completed).toBe(true);
+  });
+
   test("remove deletes an existing task", () => {
     const concept = new TaskTrackingConcept(() => "task-001");
 
@@ -86,6 +108,10 @@ describe("TaskTracking", () => {
 
     expect(() =>
       concept.complete({ task: "missing-task" }),
+    ).toThrow(TaskNotFound);
+
+    expect(() =>
+      concept.reopen({ task: "missing-task" }),
     ).toThrow(TaskNotFound);
 
     expect(() =>

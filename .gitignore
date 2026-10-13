@@ -1,9 +1,6 @@
+
+# Dependencies
 node_modules/
-*.tsbuildinfo
-*.log
-.env
-.env.*
-.DS_Store
 
 # Environment variables and secrets
 .env
@@ -13,8 +10,10 @@ node_modules/
 # Uploaded screenshots
 uploads/
 
-# Dependencies
-node_modules/
-
 # Build outputs
 dist/
+*.tsbuildinfo
+
+# Logs and system files
+*.log
+.DS_Store

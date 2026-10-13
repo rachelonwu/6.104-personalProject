@@ -62,4 +62,62 @@ describe("SnapBack MongoDB persistence", () => {
 
     expect(persistedTasks).toEqual(createdTasks);
   });
+
+  test("a completed task can be reopened and its state persists", async () => {
+    const {
+      application,
+      screenshots,
+      intentions,
+      tasks,
+    } = await assemblePersistentApplication();
+
+    const gateway = createGateway({ application });
+
+    const owner = `test-user-${crypto.randomUUID()}`;
+
+    const { screenshot } = await screenshots.upload({
+      owner,
+      imageRef: "reopen-test.png",
+      uploadedAt: new Date().toISOString(),
+    });
+
+    const { inference } = await intentions.infer({
+      screenshot,
+      description: "Submit project",
+    });
+
+    const result = await gateway.invoke("/inferences/confirm", {
+      inference,
+    });
+
+    expect(result.ok).toBe(true);
+
+    await gateway.whenIdle();
+
+    const createdTasks = await tasks._listByOwner({ owner });
+
+    expect(createdTasks).toHaveLength(1);
+
+    const task = createdTasks[0].task;
+
+    await tasks.complete({ task });
+
+    expect((await tasks._get({ task }))[0]?.completed).toBe(true);
+
+    await tasks.reopen({ task });
+
+    expect((await tasks._get({ task }))[0]?.completed).toBe(false);
+
+    const restarted = await assemblePersistentApplication();
+
+    const persistedTasks = await restarted.tasks._listByOwner({ owner });
+
+    expect(persistedTasks).toHaveLength(1);
+    expect(persistedTasks[0]).toMatchObject({
+      task,
+      source: inference,
+      description: "Submit project",
+      completed: false,
+    });
+  });
 });
