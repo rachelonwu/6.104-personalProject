@@ -1,0 +1,204 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f7f8fc;
+  color: #222;
+}
+
+.container {
+  max-width: 760px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+header {
+  margin-bottom: 28px;
+}
+
+h1 {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+header p {
+  color: #666;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 20px;
+  margin-top: 0;
+}
+
+header p,
+.card > p {
+  color: #666;
+}
+
+input[type="file"],
+textarea,
+input[type="text"] {
+  width: 100%;
+  margin: 12px 0;
+}
+
+textarea,
+input[type="text"] {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font: inherit;
+}
+
+button {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f3f4f6;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+button.danger {
+  color: #b91c1c;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preview {
+  display: block;
+  max-width: 100%;
+  max-height: 300px;
+  margin-top: 16px;
+  border-radius: 8px;
+}
+
+.task-list {
+  list-style: none;
+  padding: 0;
+}
+
+.task-list li {
+  padding: 16px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.task-content {
+  width: 100%;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.task-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.task-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.task-edit {
+  width: 100%;
+}
+
+.completed {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.screenshot-section {
+  margin-top: 10px;
+  padding-left: 30px;
+}
+
+.screenshot-toggle {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.screenshot-toggle:hover {
+  text-decoration: underline;
+}
+
+.screenshot-container {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.task-screenshot {
+  display: block;
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+.success {
+  color: #15803d;
+}
+
+@media (max-width: 600px) {
+  .container {
+    margin: 20px auto;
+    padding: 0 12px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .task-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
