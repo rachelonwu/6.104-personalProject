@@ -28,6 +28,7 @@ const screenshotId = ref("");
 const imageUrl = ref("");
 const intention = ref("");
 const inferenceId = ref("");
+const hasAISuggestion = ref(false);
 const suggestedReminder = ref("");
 const suggestedReminderTime = ref("");
 const suggestedHasTime = ref(false);
@@ -157,6 +158,7 @@ function clearWorkspace() {
   imageUrl.value = "";
   intention.value = "";
   inferenceId.value = "";
+  hasAISuggestion.value = false;
   suggestedReminder.value = "";
   suggestedReminderTime.value = "";
   suggestedHasTime.value = false;
@@ -263,6 +265,7 @@ function selectFile(event) {
   screenshotId.value = "";
   imageUrl.value = "";
   inferenceId.value = "";
+  hasAISuggestion.value = false;
   intention.value = "";
   suggestedReminder.value = "";
   suggestedReminderTime.value = "";
@@ -298,6 +301,7 @@ async function uploadScreenshot() {
     screenshotId.value = data.screenshot;
     imageUrl.value = `${API}${data.imageUrl}`;
     inferenceId.value = "";
+    hasAISuggestion.value = false;
     intention.value = "";
     suggestedReminder.value = "";
     suggestedReminderTime.value = "";
@@ -383,6 +387,7 @@ async function generateAISuggestion() {
     }
 
     intention.value = data.description.trim();
+    hasAISuggestion.value = true;
     applySuggestedReminder(data);
 
     message.value =
@@ -534,6 +539,7 @@ async function confirmInference() {
 
     screenshotId.value = "";
     inferenceId.value = "";
+    hasAISuggestion.value = false;
     imageUrl.value = "";
     selectedFile.value = null;
     clearUploadPreview();
@@ -973,6 +979,7 @@ onBeforeUnmount(() => {
 
         <div v-else class="actions">
           <button
+            v-if="hasAISuggestion"
             :disabled="loading || !intention.trim()"
             @click="correctInference"
           >
