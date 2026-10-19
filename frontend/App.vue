@@ -28,7 +28,6 @@ const screenshotId = ref("");
 const imageUrl = ref("");
 const intention = ref("");
 const inferenceId = ref("");
-const hasAISuggestion = ref(false);
 const suggestedReminder = ref("");
 const suggestedReminderTime = ref("");
 const suggestedHasTime = ref(false);
@@ -158,7 +157,6 @@ function clearWorkspace() {
   imageUrl.value = "";
   intention.value = "";
   inferenceId.value = "";
-  hasAISuggestion.value = false;
   suggestedReminder.value = "";
   suggestedReminderTime.value = "";
   suggestedHasTime.value = false;
@@ -265,7 +263,6 @@ function selectFile(event) {
   screenshotId.value = "";
   imageUrl.value = "";
   inferenceId.value = "";
-  hasAISuggestion.value = false;
   intention.value = "";
   suggestedReminder.value = "";
   suggestedReminderTime.value = "";
@@ -301,8 +298,7 @@ async function uploadScreenshot() {
     screenshotId.value = data.screenshot;
     imageUrl.value = `${API}${data.imageUrl}`;
     inferenceId.value = "";
-    hasAISuggestion.value = false;
-    intention.value = "";
+      intention.value = "";
     suggestedReminder.value = "";
     suggestedReminderTime.value = "";
     suggestedHasTime.value = false;
@@ -387,72 +383,14 @@ async function generateAISuggestion() {
     }
 
     intention.value = data.description.trim();
-    hasAISuggestion.value = true;
     applySuggestedReminder(data);
 
     message.value =
-      "AI suggestion generated. Review and edit it before saving.";
+      "AI suggestion generated. Review and edit it before creating your task.";
   } catch (err) {
     error.value = err.message;
   } finally {
     aiLoading.value = false;
-  }
-}
-
-async function createInference() {
-  if (!intention.value.trim()) {
-    error.value = "Please enter an intended action.";
-    return;
-  }
-
-  loading.value = true;
-  error.value = "";
-  message.value = "";
-
-  try {
-    const data = await request("/api/inferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        screenshot: screenshotId.value,
-        description: intention.value,
-      }),
-    });
-
-    inferenceId.value = data.inference;
-    message.value =
-      "Intention saved. Review or correct it before confirming.";
-  } catch (err) {
-    error.value = err.message;
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function correctInference() {
-  if (!intention.value.trim()) {
-    error.value = "Please enter an intended action.";
-    return;
-  }
-
-  loading.value = true;
-  error.value = "";
-  message.value = "";
-
-  try {
-    await request(`/api/inferences/${inferenceId.value}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        description: intention.value,
-      }),
-    });
-
-    message.value = "Intention updated.";
-  } catch (err) {
-    error.value = err.message;
-  } finally {
-    loading.value = false;
   }
 }
 
@@ -479,13 +417,27 @@ async function confirmInference() {
   message.value = "";
 
   try {
-    await request(`/api/inferences/${inferenceId.value}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        description: intention.value,
-      }),
-    });
+    // Keep the IntentionInferring concept in the workflow, but perform
+    // its actions behind a single user-facing confirmation button.
+    // Retain the created inference ID if a later step fails, so a retry
+    // does not create an additional inference.
+    if (!inferenceId.value) {
+      const created = await request("/api/inferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          screenshot: screenshotId.value,
+          description: intention.value.trim(),
+        }),
+      });
+      inferenceId.value = created.inference;
+    } else {
+      await request(`/api/inferences/${inferenceId.value}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: intention.value.trim() }),
+      });
+    }
 
     const confirmedInference = inferenceId.value;
     const existingTaskIds = new Set(
@@ -539,8 +491,7 @@ async function confirmInference() {
 
     screenshotId.value = "";
     inferenceId.value = "";
-    hasAISuggestion.value = false;
-    imageUrl.value = "";
+      imageUrl.value = "";
     selectedFile.value = null;
     clearUploadPreview();
     intention.value = "";
@@ -970,30 +921,12 @@ onBeforeUnmount(() => {
         </div>
 
         <button
-          v-if="!inferenceId"
+          class="primary"
           :disabled="loading || aiLoading || !intention.trim()"
-          @click="createInference"
+          @click="confirmInference"
         >
-          Save Intention
+          {{ loading ? "Creating Task..." : "Confirm and Create Task" }}
         </button>
-
-        <div v-else class="actions">
-          <button
-            v-if="hasAISuggestion"
-            :disabled="loading || !intention.trim()"
-            @click="correctInference"
-          >
-            Save Correction
-          </button>
-
-          <button
-            class="primary"
-            :disabled="loading || !intention.trim()"
-            @click="confirmInference"
-          >
-            Confirm and Create Task
-          </button>
-        </div>
       </section>
 
       <p v-if="error" class="error" role="alert">
