@@ -14,9 +14,9 @@ export async function connectDatabase(): Promise<Db> {
   }
 
   await client.connect();
-  database = client.db("snapback");
+  database = client.db();
 
-  console.log("Connected to MongoDB database: snapback");
+  console.log(`Connected to MongoDB database: ${database.databaseName}`);
 
   return database;
 }

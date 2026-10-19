@@ -1,6 +1,7 @@
 
 import { inferScreenshotIntention } from "./ParleyInference.js";
 import { resolve } from "node:path";
+import { readFile } from "node:fs/promises";
 
 const imagePath = process.argv[2];
 
@@ -34,9 +35,9 @@ try {
   console.log("Sending screenshot to MIT Parley...");
 
   const description = await inferScreenshotIntention(
-    absolutePath,
-    mimeType,
-  );
+  await readFile(absolutePath),
+  mimeType,
+);
 
   console.log("\nAI-generated task:");
   console.log(description);

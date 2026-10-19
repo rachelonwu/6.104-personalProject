@@ -1,6 +1,3 @@
-
-import { readFile } from "node:fs/promises";
-
 const PARLEY_ENDPOINT =
   "https://parley.api.mit.edu/v1/chat/completions";
 
@@ -120,7 +117,7 @@ function parseInference(content: string): ScreenshotInference {
 }
 
 export async function inferScreenshotIntention(
-  imagePath: string,
+  imageBytes: Uint8Array,
   mimeType: string,
 ): Promise<ScreenshotInference> {
   const apiKey = process.env.PARLEY_API_KEY;
@@ -144,8 +141,7 @@ export async function inferScreenshotIntention(
     );
   }
 
-  const imageBytes = await readFile(imagePath);
-  const base64Image = imageBytes.toString("base64");
+  const base64Image = Buffer.from(imageBytes).toString("base64");
 
   let response: Response;
 
