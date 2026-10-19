@@ -850,6 +850,7 @@ Bun.serve({
           "description",
           "completed",
           "reminderAt",
+          "reminderDateOnly",
         ];
         if (
           Object.keys(update).length === 0 ||
@@ -904,6 +905,18 @@ Bun.serve({
             }
           }
         }
+        if (
+          "reminderDateOnly" in update &&
+          typeof update.reminderDateOnly !== "boolean"
+        ) {
+          return json({ error: "reminderDateOnly must be a boolean." }, 400);
+        }
+        if (
+          update.reminderDateOnly === true &&
+          (typeof update.reminderAt !== "string" || !Number.isFinite(Date.parse(update.reminderAt)))
+        ) {
+          return json({ error: "Date-only reminders require a reminder timestamp." }, 400);
+        }
         // All supplied values are valid; apply the updates.
         if (typeof update.description === "string") {
           await tasks.edit({
@@ -921,6 +934,12 @@ Bun.serve({
             task,
             reminderAt: update.reminderAt as string | null,
           });
+        }
+        if ("reminderDateOnly" in update || "reminderAt" in update) {
+          await database.collection("tasks").updateOne(
+            { task, owner },
+            { $set: { reminderDateOnly: update.reminderAt === null ? false : update.reminderDateOnly === true } },
+          );
         }
         return json({ updated: task });
       }

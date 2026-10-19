@@ -28,6 +28,8 @@ const imageUrl = ref("");
 const intention = ref("");
 const inferenceId = ref("");
 const suggestedReminder = ref("");
+const suggestedReminderTime = ref("");
+const suggestedHasTime = ref(false);
 const tasks = ref([]);
 const loading = ref(false);
 const aiLoading = ref(false);
@@ -41,6 +43,8 @@ const screenshotObjectUrls = ref({});
 
 const editingReminderId = ref(null);
 const reminderInput = ref("");
+const reminderTimeInput = ref("");
+const reminderHasTime = ref(false);
 const savingReminder = ref(false);
 
 const notificationStatus = ref(notificationPermission());
@@ -145,12 +149,16 @@ function clearWorkspace() {
   intention.value = "";
   inferenceId.value = "";
   suggestedReminder.value = "";
+  suggestedReminderTime.value = "";
+  suggestedHasTime.value = false;
   tasks.value = [];
   notificationMessage.value = "";
   editingTaskId.value = null;
   editedDescription.value = "";
   editingReminderId.value = null;
   reminderInput.value = "";
+  reminderTimeInput.value = "";
+  reminderHasTime.value = false;
   savingReminder.value = false;
   expandedScreenshots.value = {};
   error.value = "";
@@ -271,6 +279,8 @@ async function uploadScreenshot() {
     inferenceId.value = "";
     intention.value = "";
     suggestedReminder.value = "";
+    suggestedReminderTime.value = "";
+    suggestedHasTime.value = false;
 
   } catch (err) {
     error.value = err.message;
@@ -293,40 +303,35 @@ function toLocalDateTime(isoTimestamp) {
   return localDate.toISOString().slice(0, 16);
 }
 
-function calculateSuggestedReminder(data) {
-  const { eventDate, eventTime, dateType } = data;
-
+// Date-only reminders notify at 9 AM in the user's local timezone.
+function reminderTimestamp(dateValue, timeValue, hasTime) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) return null;
+  const time = hasTime ? timeValue : "09:00";
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return null;
+  const date = new Date(`${dateValue}T${time}:00`);
   if (
-    typeof eventDate !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(eventDate)
-  ) {
-    return "";
+    !Number.isFinite(date.getTime()) ||
+    date.getFullYear() !== Number(dateValue.slice(0, 4)) ||
+    date.getMonth() + 1 !== Number(dateValue.slice(5, 7)) ||
+    date.getDate() !== Number(dateValue.slice(8, 10)) ||
+    date.getHours() !== Number(time.slice(0, 2)) ||
+    date.getMinutes() !== Number(time.slice(3, 5))
+  ) return null;
+  return date.toISOString();
+}
+
+function applySuggestedReminder(data) {
+  const date = data.eventDate;
+  if (typeof date !== "string" || !reminderTimestamp(date, "", false)) {
+    suggestedReminder.value = "";
+    suggestedReminderTime.value = "";
+    suggestedHasTime.value = false;
+    return;
   }
-
-  if (
-    typeof eventTime !== "string" ||
-    !/^([01]\d|2[0-3]):[0-5]\d$/.test(eventTime)
-  ) {
-    return "";
-  }
-
-  const event = new Date(`${eventDate}T${eventTime}:00`);
-
-  if (
-    Number.isNaN(event.getTime()) ||
-    event.getFullYear() !== Number(eventDate.slice(0, 4)) ||
-    event.getMonth() + 1 !== Number(eventDate.slice(5, 7)) ||
-    event.getDate() !== Number(eventDate.slice(8, 10))
-  ) {
-    return "";
-  }
-
-  const offset = dateType === "deadline" ? 24 * 60 : 60;
-  const reminder = new Date(event.getTime() - offset * 60_000);
-
-  // Populate the picker even when the suggested time is in the past.
-  // Validation before saving still requires a future reminder.
-  return toLocalDateTime(reminder.toISOString());
+  suggestedReminder.value = date;
+  suggestedHasTime.value = typeof data.eventTime === "string" &&
+    /^([01]\d|2[0-3]):[0-5]\d$/.test(data.eventTime);
+  suggestedReminderTime.value = suggestedHasTime.value ? data.eventTime : "";
 }
 
 async function generateAISuggestion() {
@@ -357,7 +362,7 @@ async function generateAISuggestion() {
     }
 
     intention.value = data.description.trim();
-    suggestedReminder.value = calculateSuggestedReminder(data);
+    applySuggestedReminder(data);
 
     message.value =
       "AI suggestion generated. Review and edit it before saving.";
@@ -431,15 +436,14 @@ async function confirmInference() {
     return;
   }
 
+  if (suggestedHasTime.value && !suggestedReminder.value) {
+    error.value = "Choose a reminder date before setting a time.";
+    return;
+  }
   if (suggestedReminder.value) {
-    const date = new Date(suggestedReminder.value);
-
-    if (
-      Number.isNaN(date.getTime()) ||
-      date.getTime() <= Date.now()
-    ) {
-      error.value =
-        "Choose a valid future reminder, or clear the reminder field.";
+    const iso = reminderTimestamp(suggestedReminder.value, suggestedReminderTime.value, suggestedHasTime.value);
+    if (!iso || Date.parse(iso) <= Date.now()) {
+      error.value = "Choose a valid future reminder. Date-only reminders notify at 9 AM.";
       return;
     }
   }
@@ -483,14 +487,14 @@ async function confirmInference() {
 
       if (matching.length === 1) {
         try {
-          const reminderAt = new Date(
-            suggestedReminder.value
-          ).toISOString();
+          const reminderAt = reminderTimestamp(
+            suggestedReminder.value, suggestedReminderTime.value, suggestedHasTime.value
+          );
 
           await request(`/api/tasks/${matching[0].task}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reminderAt }),
+            body: JSON.stringify({ reminderAt, reminderDateOnly: !suggestedHasTime.value }),
           });
 
           await loadTasks();
@@ -513,6 +517,8 @@ async function confirmInference() {
     selectedFile.value = null;
     intention.value = "";
     suggestedReminder.value = "";
+    suggestedReminderTime.value = "";
+    suggestedHasTime.value = false;
 
     message.value = reminderMessage;
   } catch (err) {
@@ -643,7 +649,7 @@ async function deleteTask(task) {
   }
 }
 
-function formatReminder(isoTimestamp) {
+function formatReminder(isoTimestamp, dateOnly = false) {
   if (!isoTimestamp) return "";
 
   const date = new Date(isoTimestamp);
@@ -652,6 +658,7 @@ function formatReminder(isoTimestamp) {
     return "Invalid reminder date";
   }
 
+  if (dateOnly) return `${date.toLocaleDateString(undefined, { dateStyle: "medium" })} (9:00 AM notification)`;
   return date.toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -660,7 +667,10 @@ function formatReminder(isoTimestamp) {
 
 function startReminderEdit(task) {
   editingReminderId.value = task.task;
-  reminderInput.value = toLocalDateTime(task.reminderAt);
+  const local = toLocalDateTime(task.reminderAt);
+  reminderInput.value = local ? local.slice(0, 10) : "";
+  reminderHasTime.value = task.reminderAt ? task.reminderDateOnly !== true : false;
+  reminderTimeInput.value = reminderHasTime.value && local ? local.slice(11, 16) : "";
   error.value = "";
   message.value = "";
 }
@@ -668,21 +678,14 @@ function startReminderEdit(task) {
 function cancelReminderEdit() {
   editingReminderId.value = null;
   reminderInput.value = "";
+  reminderTimeInput.value = "";
+  reminderHasTime.value = false;
 }
 
 async function saveReminder(task) {
-  if (!reminderInput.value) {
-    error.value = "Choose a reminder date and time.";
-    return;
-  }
-
-  const selectedDate = new Date(reminderInput.value);
-
-  if (
-    Number.isNaN(selectedDate.getTime()) ||
-    selectedDate.getTime() <= Date.now()
-  ) {
-    error.value = "Choose a valid reminder time in the future.";
+  const reminderAt = reminderTimestamp(reminderInput.value, reminderTimeInput.value, reminderHasTime.value);
+  if (!reminderAt || Date.parse(reminderAt) <= Date.now()) {
+    error.value = "Choose a valid future reminder. Date-only reminders notify at 9 AM.";
     return;
   }
 
@@ -694,11 +697,8 @@ async function saveReminder(task) {
     await request(`/api/tasks/${task.task}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        reminderAt: selectedDate.toISOString(),
-      }),
+      body: JSON.stringify({ reminderAt, reminderDateOnly: !reminderHasTime.value }),
     });
-
     cancelReminderEdit();
     await loadTasks();
     message.value = "Reminder saved.";
@@ -719,7 +719,7 @@ async function removeReminder(task) {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        reminderAt: null,
+        reminderAt: null, reminderDateOnly: false,
       }),
     });
 
@@ -925,9 +925,12 @@ onBeforeUnmount(() => {
           <input
             id="new-task-reminder"
             v-model="suggestedReminder"
-            type="datetime-local"
+            type="date"
             :disabled="loading || aiLoading"
           />
+          <label class="form-hint"><input v-model="suggestedHasTime" type="checkbox" :disabled="loading || aiLoading" /> Set a specific notification time</label>
+          <input v-if="suggestedHasTime" v-model="suggestedReminderTime" type="time" :disabled="loading || aiLoading" aria-label="Suggested reminder time" />
+          <p class="form-hint" v-if="suggestedReminder && !suggestedHasTime">Notification at 9:00 AM on this date.</p>
         </div>
 
         <button
@@ -1006,7 +1009,7 @@ onBeforeUnmount(() => {
               :key="`due-${task.task}`"
             >
               {{ task.description }} —
-              {{ formatReminder(task.reminderAt) }}
+              {{ formatReminder(task.reminderAt, task.reminderDateOnly) }}
             </li>
           </ul>
         </div>
@@ -1076,15 +1079,18 @@ onBeforeUnmount(() => {
               <div class="task-reminder">
                 <div v-if="editingReminderId === task.task">
                   <label :for="`reminder-${task.task}`">
-                    Reminder date and time
+                    Reminder date
                   </label>
 
                   <input
                     :id="`reminder-${task.task}`"
                     v-model="reminderInput"
-                    type="datetime-local"
+                    type="date"
                     :disabled="savingReminder"
                   />
+                  <label class="form-hint"><input v-model="reminderHasTime" type="checkbox" :disabled="savingReminder" /> Set a specific notification time</label>
+                  <input v-if="reminderHasTime" v-model="reminderTimeInput" type="time" :disabled="savingReminder" aria-label="Reminder time" />
+                  <p class="form-hint" v-if="reminderInput && !reminderHasTime">Notification at 9:00 AM on this date.</p>
 
                   <div class="actions">
                     <button
@@ -1123,7 +1129,7 @@ onBeforeUnmount(() => {
                     class="form-hint"
                   >
                     Reminder:
-                    {{ formatReminder(task.reminderAt) }}
+                    {{ formatReminder(task.reminderAt, task.reminderDateOnly) }}
                   </p>
 
                   <p v-else class="form-hint">
