@@ -272,8 +272,6 @@ async function uploadScreenshot() {
     intention.value = "";
     suggestedReminder.value = "";
 
-    message.value =
-      "Screenshot uploaded. Generate an AI suggestion or enter an action manually.";
   } catch (err) {
     error.value = err.message;
   } finally {
@@ -899,14 +897,14 @@ onBeforeUnmount(() => {
             }}
           </button>
 
-          <p class="form-hint">
+          <p class="form-hint ai-suggestion-hint">
             Optional: Clicking this button sends your screenshot to
             MIT Parley for AI analysis. Review the suggestion before
             saving it. You can also enter an action manually.
           </p>
         </div>
 
-        <label for="intention-description">
+        <label for="intention-description" class="intention-label">
           Intended action
         </label>
 
@@ -981,14 +979,7 @@ onBeforeUnmount(() => {
             Enable Notifications
           </button>
 
-          <p
-            v-else-if="notificationStatus === 'granted'"
-            class="form-hint"
-          >
-            Browser notifications are enabled while SnapBack is open.
-          </p>
-
-          <p v-else class="form-hint">
+          <p v-else-if="notificationStatus !== 'granted'" class="form-hint">
             Browser notifications are unavailable or blocked.
             Due reminders still appear here.
           </p>
@@ -1195,3 +1186,9 @@ onBeforeUnmount(() => {
     </template>
   </main>
 </template>
+
+<style scoped>
+.ai-suggestion-hint {
+  margin-top: 16px;
+}
+</style>

@@ -1,155 +1,141 @@
 
 # SnapBack
 
-SnapBack is a web application that helps users turn saved screenshots into actionable tasks. Instead of leaving important information buried in their photo libraries, users can upload a screenshot, identify what they want to do with it, and create a task they can return to later.
+SnapBack is a web application that helps people act on information they save as screenshots. Instead of letting screenshots get buried in a photo library, users can upload them, generate an AI-suggested action, edit that suggestion, and save it as a task with an optional reminder.
 
+## P3 Submission Materials
 
-## Design
+The public project repository contains the SnapBack implementation and the following P3 deliverables:
 
-[Design Document](designDocument.md)
+| Deliverable | Location |
+| --- | --- |
+| Application source code | [frontend/](frontend/) and [src/](src/) |
+| Concept and application specifications | [design/](design/) |
+| Automated concept, composition, and security tests | [tests/](tests/) |
+| Saved automated test output | [test-output.txt](test-output.txt) |
+| Visual design study (two slides) | TODO: Add the file to this repository and link it here |
+| Updated user journey | TODO: Add the file to this repository and link it here |
+| Narrated screen recording (two minutes or less) | TODO: Add the YouTube URL here |
+
+**Deployed application:** https://snapback.mit-sdg.dev
+
 
 ## Features
 
-- Upload screenshots from your computer.
-- Enter an intended action associated with a screenshot.
-- Review and correct the intention before confirming it.
-- Automatically create a task when an intention is confirmed.
-- View tasks and their original screenshots.
-- Edit task descriptions.
-- Mark tasks as completed and reopen them.
-- Delete tasks.
-- Preserve tasks and completion states in MongoDB across application restarts.
+- Create an account, sign in, and sign out.
+- Upload screenshots and view previously uploaded screenshots.
+- Generate an AI suggestion based on a screenshot and revise the suggested action before saving it.
+- Create, edit, complete, reopen, and delete tasks.
+- Set, change, or remove task reminders.
+- View tasks associated with the signed-in account.
+- Receive browser notifications for due reminders while the application is open, when notification permission is granted.
 
-## Concepts
+## Tech Stack
 
-SnapBack uses three concepts:
+- **Frontend:** Vue 3, Vite, TypeScript
+- **Backend:** Bun, TypeScript, SyncEngine
+- **Database:** MongoDB
+- **AI:** MIT Parley (Claude Haiku 4.5)
+- **Screenshot storage:** Local storage during development; S3-compatible object storage in production
 
-### ScreenshotStoring
-
-Stores screenshot metadata, including the owner, image reference, and upload timestamp.
-
-### IntentionInferring
-
-Manages intentions associated with screenshots. An intention can be created, corrected, and confirmed.
-
-### TaskTracking
-
-Manages tasks created from confirmed intentions. Tasks can be edited, completed, reopened, and removed.
-
-## Synchronization
-
-The application uses SyncEngine to coordinate its concepts.
-
-When an intention is confirmed, the TaskCreation synchronization creates a task associated with the confirmed inference and its screenshot owner.
-
-The backend also exposes HTTP endpoints for the frontend to interact with the concepts.
-
-## Technologies
-
-- Vue 3 and Vite for the frontend
-- TypeScript and Bun for the backend
-- SyncEngine for concept registration and synchronization
-- MongoDB for persistent storage
-- Podman for running MongoDB locally
-
-## Running Locally
+## Getting Started
 
 ### Prerequisites
 
-Install:
-
 - Bun
-- Node.js and npm
-- Podman with a working Compose provider
+- A running MongoDB instance
+- Access to the AI service for live screenshot inference
 
-### 1. Install dependencies
+### Install Dependencies
 
-From the project root:
-
-```powershell
-npm install
+```bash
+bun install
 ```
 
-### 2. Start MongoDB
+### Configure the Environment
 
-Start the MongoDB container using the included Compose configuration:
-
-```powershell
-podman compose up -d
-```
-
-This creates a local MongoDB instance with development credentials and a persistent data volume.
-
-To stop MongoDB without deleting its data:
-
-```powershell
-podman compose down
-```
-
-### 3. Configure environment variables
-
-Create a `.env` file in the project root containing:
+Create a local `.env` file and configure the environment variables used by the application. At minimum, the backend needs a MongoDB connection string and an AI service API key for live inference:
 
 ```dotenv
-MONGODB_URI=mongodb://dev:dev@127.0.0.1:27017/snapback?authSource=admin
+MONGODB_URI=mongodb://localhost:27017/snapback
+PARLEY_API_KEY=your_api_key_here
 ```
 
-These credentials are intended only for local development. The `.env` file is excluded from Git.
+Your MongoDB URI may also require credentials and an `authSource` parameter, depending on how your local server is configured. Do not commit `.env` or real credentials to Git.
 
-### 4. Start the backend
+For production, configure the S3-compatible storage environment variables supported by the hosting provider, including `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, and `S3_REGION`. Set `PUBLIC_ORIGIN` to the deployed application's public URL.
 
-In one terminal, run:
+### Run Locally
 
-```powershell
+Start the backend:
+
+```bash
 bun run start
 ```
 
-The backend runs at http://localhost:3000.
+The application is served at `http://localhost:3000` in the local production-style setup. For frontend development, use the Vite development command configured for the project.
 
-### 5. Start the frontend
+### Validate the Project
 
-In another terminal, run:
-
-```powershell
-npx vite
-```
-
-Open http://localhost:5173.
-
-## Running Tests
-
-Run the test suite:
-
-```powershell
-bun test tests
-```
-
-The tests cover individual concept actions, concept synchronization, and MongoDB persistence.
-
-To verify concept specifications, generated artifacts, and TypeScript types:
-
-```powershell
+```bash
 bun run check
+bun run build
 ```
 
-## Example Workflow
+## Automated Tests
 
-1. Upload a screenshot of an event or opportunity.
-2. Enter an action you want to remember, such as "Register for the career fair."
-3. Save the intention.
-4. Review or correct its description.
-5. Confirm the intention to create a task.
-6. View the task and its associated screenshot.
-7. Edit, complete, reopen, or delete the task as needed.
+SnapBack has **54 automated tests across 8 files**, with **131 assertions** in the most recent successful run. The suite covers concept behavior, application composition, MongoDB persistence, authentication, and login rate limiting.
 
-## Current Limitations
+| Test Area | Coverage |
+| --- | --- |
+| ScreenshotStoring | Upload, retrieve, delete, and nonexistent screenshots |
+| IntentionInferring | Infer, correct, confirm, repeated confirmation, and invalid operations |
+| TaskTracking | Create, edit, complete, reopen, delete, reminders, and invalid operations |
+| UserAuthentication | Registration, login, logout, duplicate accounts, and session behavior |
+| Application composition | Creating tasks from confirmed suggestions and preventing duplicate tasks |
+| MongoDB persistence | Task and authentication state surviving application/concept reassembly |
+| Login rate limiting | Attempt limits, account isolation, concurrent requests, and expiration data |
 
-SnapBack is currently a local-development MVP.
+### Running Tests
 
-- **Manual intention entry:** Users enter the intended action themselves. Automatic AI-based intention inference is not yet implemented.
-- **Single-user setup:** The backend uses a fixed owner ID rather than authenticated user accounts.
-- **Screenshot access controls:** Uploaded images are served without user-specific authorization checks. The application is not intended for public deployment in this state.
-- **Screenshot deletion:** Screenshot removal exists at the concept level, but the web interface does not yet support deleting uploaded screenshots.
-- **Local image storage:** Screenshot image files are stored in the local `uploads/` directory, while screenshot metadata and tasks are stored in MongoDB.
+Use a separate test database. Some tests create or delete MongoDB records, and the MongoDB-backed test suites may create and drop temporary test databases. Do not run them against a production database.
 
-Future iterations may introduce automatic intention inference, user authentication, access controls, and screenshot management.
+1. Start your local MongoDB server.
+2. Set `MONGODB_URI` to a valid local test connection string with the necessary credentials. The database should be separate from the application's normal database, for example `snapback_p3_test`. If your MongoDB user authenticates against `admin` or another database, retain the appropriate `authSource` setting.
+3. Run:
+
+```bash
+bun test
+```
+
+To save the output on Windows PowerShell:
+
+```powershell
+bun test *> test-output.txt
+```
+
+The most recent successful run reported:
+
+```text
+54 pass
+0 fail
+131 expect() calls
+Ran 54 tests across 8 files.
+```
+
+## Project Structure
+
+```text
+frontend/           Vue frontend
+src/                Backend, concepts, persistence, and application assembly
+tests/concepts/     Concept tests
+tests/compositions/ Application composition and persistence tests
+tests/security/     Login rate-limiting tests
+design/             Concept and application specifications
+```
+
+## Notes
+
+- Screenshot access and task data are tied to authenticated accounts.
+- Browser reminders depend on notification permissions and the application being open; they are not guaranteed background push notifications.
+- Never commit `.env`, API keys, database credentials, or private screenshot data.
