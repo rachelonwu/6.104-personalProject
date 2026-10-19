@@ -23,6 +23,7 @@ const authLoading = ref(false);
 const authError = ref("");
 
 const selectedFile = ref(null);
+const uploadPreviewUrl = ref("");
 const screenshotId = ref("");
 const imageUrl = ref("");
 const intention = ref("");
@@ -142,7 +143,15 @@ function clearImageUrls() {
   screenshotObjectUrls.value = {};
 }
 
+function clearUploadPreview() {
+  if (uploadPreviewUrl.value) {
+    URL.revokeObjectURL(uploadPreviewUrl.value);
+    uploadPreviewUrl.value = "";
+  }
+}
+
 function clearWorkspace() {
+  clearUploadPreview();
   selectedFile.value = null;
   screenshotId.value = "";
   imageUrl.value = "";
@@ -248,7 +257,19 @@ async function logout() {
 }
 
 function selectFile(event) {
+  clearUploadPreview();
   selectedFile.value = event.target.files?.[0] ?? null;
+  // A newly selected image must be uploaded before it can be analyzed.
+  screenshotId.value = "";
+  imageUrl.value = "";
+  inferenceId.value = "";
+  intention.value = "";
+  suggestedReminder.value = "";
+  suggestedReminderTime.value = "";
+  suggestedHasTime.value = false;
+  if (selectedFile.value) {
+    uploadPreviewUrl.value = URL.createObjectURL(selectedFile.value);
+  }
   error.value = "";
   message.value = "";
 }
@@ -515,6 +536,7 @@ async function confirmInference() {
     inferenceId.value = "";
     imageUrl.value = "";
     selectedFile.value = null;
+    clearUploadPreview();
     intention.value = "";
     suggestedReminder.value = "";
     suggestedReminderTime.value = "";
@@ -744,6 +766,7 @@ onBeforeUnmount(() => {
   }
 
   clearImageUrls();
+  clearUploadPreview();
 });
 </script>
 
@@ -849,29 +872,36 @@ onBeforeUnmount(() => {
       <section class="card">
         <h2>1. Upload a screenshot</h2>
 
-        <input
-          type="file"
-          accept=".png,.jpg,.jpeg,.webp,.gif,.heic,.heif,image/*"
-          aria-label="Choose a screenshot"
-          :disabled="loading || aiLoading"
-          @change="selectFile"
-        />
+        <div class="upload-layout">
+          <div class="upload-controls">
+            <input
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp,.gif,.heic,.heif,image/*"
+              aria-label="Choose a screenshot"
+              :disabled="loading || aiLoading"
+              @change="selectFile"
+            />
 
-        <button
-          :disabled="loading || aiLoading || !selectedFile"
-          @click="uploadScreenshot"
-        >
-          {{ loading ? "Uploading..." : "Upload Screenshot" }}
-        </button>
+            <button
+              :disabled="loading || aiLoading || !selectedFile"
+              @click="uploadScreenshot"
+            >
+              {{ loading ? "Uploading..." : "Upload Screenshot" }}
+            </button>
 
-        <div
-          v-if="imageUrl"
-          class="screenshot-container preview-container"
-        >
-          <p>Screenshot uploaded successfully.</p>
-          <p class="form-hint">
-            Continue below to generate or enter your intended action.
-          </p>
+            <p v-if="screenshotId" class="form-hint" role="status">
+              Screenshot uploaded. Continue below to generate or enter your intended action.
+            </p>
+          </div>
+
+          <div v-if="uploadPreviewUrl" class="upload-preview">
+            <img
+              :src="uploadPreviewUrl"
+              :alt="`Preview of ${selectedFile?.name || 'selected screenshot'}`"
+              class="upload-preview-image"
+            />
+            <p class="form-hint">{{ screenshotId ? "Uploaded screenshot" : "Selected screenshot preview" }}</p>
+          </div>
         </div>
       </section>
 
@@ -1194,6 +1224,46 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.upload-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.upload-controls {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.upload-controls input[type="file"] {
+  max-width: 100%;
+}
+.upload-preview {
+  flex: 0 1 280px;
+  min-width: 0;
+  max-width: 100%;
+  text-align: center;
+}
+.upload-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  border: 1px solid #dedede;
+  border-radius: 12px;
+}
+.upload-preview .form-hint {
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .upload-preview { flex-basis: 100%; }
+}
 .ai-suggestion-hint {
   margin-top: 16px;
 }
