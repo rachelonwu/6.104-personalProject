@@ -3,10 +3,11 @@ import { describe, expect, test } from "bun:test";
 import {
   TaskTrackingConcept,
   TaskNotFound,
+  InvalidReminder,
 } from "../../src/concepts/TaskTracking.js";
 
 describe("TaskTracking", () => {
-  test("create adds a new incomplete task", () => {
+  test("create adds a new incomplete task without a reminder", () => {
     const concept = new TaskTrackingConcept(() => "task-001");
 
     const result = concept.create({
@@ -23,6 +24,7 @@ describe("TaskTracking", () => {
         source: "inference-001",
         description: "Attend career fair",
         completed: false,
+        reminderAt: null,
       },
     ]);
   });
@@ -44,6 +46,102 @@ describe("TaskTracking", () => {
     expect(concept._get({ task })[0]?.description).toBe(
       "Prepare for and attend career fair",
     );
+  });
+
+  test("setReminder assigns a reminder to a task", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Attend career fair",
+    });
+
+    const reminderAt = "2026-10-21T22:00:00.000Z";
+
+    concept.setReminder({ task, reminderAt });
+
+    expect(concept._get({ task })[0]?.reminderAt).toBe(reminderAt);
+  });
+
+  test("setReminder updates an existing reminder", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Attend career fair",
+    });
+
+    concept.setReminder({
+      task,
+      reminderAt: "2026-10-21T22:00:00.000Z",
+    });
+
+    concept.setReminder({
+      task,
+      reminderAt: "2026-10-22T18:00:00.000Z",
+    });
+
+    expect(concept._get({ task })[0]?.reminderAt).toBe(
+      "2026-10-22T18:00:00.000Z",
+    );
+  });
+
+  test("setReminder removes a reminder when given null", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Attend career fair",
+    });
+
+    concept.setReminder({
+      task,
+      reminderAt: "2026-10-21T22:00:00.000Z",
+    });
+
+    concept.setReminder({ task, reminderAt: null });
+
+    expect(concept._get({ task })[0]?.reminderAt).toBeNull();
+  });
+
+  test("setReminder rejects invalid timestamps", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Attend career fair",
+    });
+
+    expect(() =>
+      concept.setReminder({
+        task,
+        reminderAt: "not-a-date",
+      }),
+    ).toThrow(InvalidReminder);
+
+    expect(() =>
+      concept.setReminder({
+        task,
+        reminderAt: "2026-02-30T22:00:00.000Z",
+      }),
+    ).toThrow(InvalidReminder);
+
+    expect(concept._get({ task })[0]?.reminderAt).toBeNull();
+  });
+
+  test("setReminder rejects nonexistent tasks", () => {
+    const concept = new TaskTrackingConcept();
+
+    expect(() =>
+      concept.setReminder({
+        task: "missing-task",
+        reminderAt: "2026-10-21T22:00:00.000Z",
+      }),
+    ).toThrow(TaskNotFound);
   });
 
   test("complete marks a task as completed", () => {
@@ -70,15 +168,12 @@ describe("TaskTracking", () => {
     });
 
     concept.complete({ task });
-
     expect(concept._get({ task })[0]?.completed).toBe(true);
 
     concept.reopen({ task });
-
     expect(concept._get({ task })[0]?.completed).toBe(false);
 
     concept.complete({ task });
-
     expect(concept._get({ task })[0]?.completed).toBe(true);
   });
 
@@ -149,12 +244,14 @@ describe("TaskTracking", () => {
         source: "inference-001",
         description: "Attend career fair",
         completed: false,
+        reminderAt: null,
       },
       {
         task: "task-3",
         source: "inference-003",
         description: "Submit internship application",
         completed: false,
+        reminderAt: null,
       },
     ]);
 

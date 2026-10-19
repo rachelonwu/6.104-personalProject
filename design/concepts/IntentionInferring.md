@@ -1,9 +1,8 @@
-
 # IntentionInferring
 
 ## Purpose
 
-Allow users to identify, correct, and confirm intentions inferred from their saved screenshots.
+Allow users to identify, correct, and confirm intentions associated with saved screenshots, preventing users from forgetting why they captured information or leaving intended actions unrecognized. IntentionInferring owns inference records that reference screenshots managed by ScreenshotStoring.
 
 ## Principle
 
@@ -13,7 +12,7 @@ When a screenshot is analyzed, the system records an inferred intention describi
 
 ```types
 external Screenshot
-  The screenshot from which an intention was inferred.
+  A screenshot stored and managed by ScreenshotStoring, from which an intention is inferred.
 ```
 
 ## State

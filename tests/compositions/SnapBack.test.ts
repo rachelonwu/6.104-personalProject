@@ -66,6 +66,7 @@ describe("SnapBack composition", () => {
       source: inference,
       description: "Register for the career fair by Friday",
       completed: false,
+      reminderAt: null,
     });
 
     expect(intentions._get({ inference })).toEqual([
@@ -108,6 +109,7 @@ describe("SnapBack composition", () => {
         source: inference,
         description: "Sign up for the conference",
         completed: false,
+        reminderAt: null,
       },
     ]);
   });

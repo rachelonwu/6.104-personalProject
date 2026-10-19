@@ -10,7 +10,7 @@ _specifications and composition source, then regenerate this file._
 
 ### IntentionInferring
 
-Defined in [IntentionInferring](../design/concepts/IntentionInferring.md), line 2.
+Defined in [IntentionInferring](../design/concepts/IntentionInferring.md), line 1.
 
 #### Actions
 
@@ -28,12 +28,12 @@ Defined in [IntentionInferring](../design/concepts/IntentionInferring.md), line 
 
 #### Instances
 
-- `IntentionInferring` — instance of `IntentionInferring` — [SnapBack Application Types](../design/types.md), line 18.
-  - `Screenshot` is `ScreenshotStoring.Screenshot` — [SnapBack Application Types](../design/types.md), line 19.
+- `IntentionInferring` — instance of `IntentionInferring` — [SnapBack Application Types](../design/types.md), line 20.
+  - `Screenshot` is `ScreenshotStoring.Screenshot` — [SnapBack Application Types](../design/types.md), line 21.
 
 ### ScreenshotStoring
 
-Defined in [ScreenshotStoring](../design/concepts/ScreenshotStoring.md), line 2.
+Defined in [ScreenshotStoring](../design/concepts/ScreenshotStoring.md), line 1.
 
 #### Actions
 
@@ -47,8 +47,8 @@ Defined in [ScreenshotStoring](../design/concepts/ScreenshotStoring.md), line 2.
 
 #### Instances
 
-- `ScreenshotStoring` — instance of `ScreenshotStoring` — [SnapBack Application Types](../design/types.md), line 15.
-  - `User` is `User` — [SnapBack Application Types](../design/types.md), line 16.
+- `ScreenshotStoring` — instance of `ScreenshotStoring` — [SnapBack Application Types](../design/types.md), line 17.
+  - `User` is `UserAuthentication.User` — [SnapBack Application Types](../design/types.md), line 18.
 
 ### TaskTracking
 
@@ -59,6 +59,9 @@ Defined in [TaskTracking](../design/concepts/TaskTracking.md), line 2.
 - `create(owner: User, source: Source, description: String) : returns (task: Task)`
 - `edit(task: Task, description: String) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
+- `setReminder(task: Task, reminderAt: ReminderTime) : returns ()`
+  - Refuses `TASK_NOT_FOUND`: The task does not exist.
+  - Refuses `INVALID_REMINDER`: Reminder must be a valid UTC ISO timestamp or null.
 - `complete(task: Task) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
 - `reopen(task: Task) : returns ()`
@@ -68,22 +71,46 @@ Defined in [TaskTracking](../design/concepts/TaskTracking.md), line 2.
 
 #### Queries
 
-- `_get(task: Task) : optional (owner: User, source: Source, description: String, completed: Boolean)`
-- `_listByOwner(owner: User) : many (task: Task, source: Source, description: String, completed: Boolean)`
+- `_get(task: Task) : optional (owner: User, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime)`
+- `_listByOwner(owner: User) : many (task: Task, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime)`
 
 #### Instances
 
-- `TaskTracking` — instance of `TaskTracking` — [SnapBack Application Types](../design/types.md), line 21.
-  - `Boolean` is `Boolean` — [SnapBack Application Types](../design/types.md), line 24.
-  - `Source` is `IntentionInferring.Inference` — [SnapBack Application Types](../design/types.md), line 23.
-  - `User` is `User` — [SnapBack Application Types](../design/types.md), line 22.
+- `TaskTracking` — instance of `TaskTracking` — [SnapBack Application Types](../design/types.md), line 23.
+  - `Boolean` is `Boolean` — [SnapBack Application Types](../design/types.md), line 26.
+  - `ReminderTime` is `ReminderTime` — [SnapBack Application Types](../design/types.md), line 27.
+  - `Source` is `IntentionInferring.Inference` — [SnapBack Application Types](../design/types.md), line 25.
+  - `User` is `UserAuthentication.User` — [SnapBack Application Types](../design/types.md), line 24.
+
+### UserAuthentication
+
+Defined in [UserAuthentication](../design/concepts/UserAuthentication.md), line 1.
+
+#### Actions
+
+- `register(email: String, passwordHash: String) : returns (user: User)`
+  - Refuses `EMAIL_ALREADY_REGISTERED`: An account with this email already exists.
+- `login(user: User, tokenHash: String, expiresAt: String) : returns (session: Session)`
+  - Refuses `USER_NOT_FOUND`: The user does not exist.
+- `logout(session: Session) : returns ()`
+  - Refuses `SESSION_NOT_FOUND`: The session does not exist.
+
+#### Queries
+
+- `_getUser(user: User) : optional (email: String, passwordHash: String)`
+- `_getByEmail(email: String) : optional (user: User, passwordHash: String)`
+- `_getSessionByTokenHash(tokenHash: String) : optional (session: Session, user: User, expiresAt: String)`
+
+#### Instances
+
+- `UserAuthentication` — instance of `UserAuthentication` — [SnapBack Application Types](../design/types.md), line 15.
 
 ## Application types
 
 Concrete types:
 
-- `Boolean` — [SnapBack Application Types](../design/types.md), line 10.
-- `User` — [SnapBack Application Types](../design/types.md), line 7.
+- `Boolean` — [SnapBack Application Types](../design/types.md), line 7.
+- `ReminderTime` — [SnapBack Application Types](../design/types.md), line 10.
 
 ## Reactions
 

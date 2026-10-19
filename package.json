@@ -1,3 +1,4 @@
+
 {
   "name": "sync-engine-test",
   "module": "index.ts",
@@ -16,9 +17,12 @@
   "scripts": {
     "generate": "sync-engine artifacts pin",
     "check": "sync-engine check && sync-engine artifacts check && tsc --noEmit",
+    "dev": "vite",
+    "build": "vite build",
     "start": "bun src/main.ts"
   },
   "dependencies": {
+    "heic2any": "^0.0.4",
     "mongodb": "^7.7.0",
     "vue": "^3.5.44"
   }

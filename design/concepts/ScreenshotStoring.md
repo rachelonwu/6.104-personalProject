@@ -1,9 +1,8 @@
-
 # ScreenshotStoring
 
 ## Purpose
 
-Allow users to save screenshots so they can access the original information later.
+Allow users to save and retrieve screenshots, preventing important information from becoming difficult to find or losing its connection to the actions users intended to take. ScreenshotStoring owns screenshot records, while the actual image files are managed by the application's storage layer.
 
 ## Principle
 
@@ -13,7 +12,7 @@ After a user uploads a screenshot, the system stores a record containing its ima
 
 ```types
 external User
-  The person who uploads and owns a screenshot.
+  The person who uploads and owns a screenshot. User accounts are managed by UserAuthentication.
 ```
 
 ## State
