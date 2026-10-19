@@ -1,6 +1,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import "./figma-theme.css";
 import { prepareImageForUpload } from "./imageConversion.js";
 import {
   notificationsSupported,
@@ -24,6 +25,9 @@ const authError = ref("");
 
 const selectedFile = ref(null);
 const uploadPreviewUrl = ref("");
+const uploadInput = ref(null);
+const draggingFile = ref(false);
+const expandedTaskDetails = ref({});
 const screenshotId = ref("");
 const imageUrl = ref("");
 const intention = ref("");
@@ -152,6 +156,7 @@ function clearUploadPreview() {
 
 function clearWorkspace() {
   clearUploadPreview();
+  expandedTaskDetails.value = {};
   selectedFile.value = null;
   screenshotId.value = "";
   imageUrl.value = "";
@@ -272,6 +277,22 @@ function selectFile(event) {
   }
   error.value = "";
   message.value = "";
+}
+
+function chooseScreenshot() {
+  if (!loading.value && !aiLoading.value) uploadInput.value?.click();
+}
+
+function handleDroppedFile(event) {
+  draggingFile.value = false;
+  if (loading.value || aiLoading.value) return;
+  const file = event.dataTransfer?.files?.[0];
+  if (!file) return;
+  selectFile({ target: { files: [file] } });
+}
+
+function toggleTaskDetails(id) {
+  expandedTaskDetails.value[id] = !expandedTaskDetails.value[id];
 }
 
 async function uploadScreenshot() {
@@ -728,8 +749,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="container">
-    <header class="site-header">
+  <main class="container snapback-shell">
+    <header class="site-header topbar">
       <div>
         <h1>SnapBack</h1>
         <p>Turn screenshots into actions you won't forget.</p>
@@ -826,55 +847,66 @@ onBeforeUnmount(() => {
     </section>
 
     <template v-else>
-      <section class="card">
-        <h2>1. Upload a screenshot</h2>
+      <div class="workspace">
+      <section class="card step-card upload-card">
+        <div class="step-heading"><span class="step-number">01</span><div>
+          <h2>Add a screenshot</h2>
+          <p>PNG, JPG, WEBP, GIF, or HEIC</p>
+        </div></div>
 
-        <div class="upload-layout">
-          <div class="upload-controls">
-            <input
-              type="file"
-              accept=".png,.jpg,.jpeg,.webp,.gif,.heic,.heif,image/*"
-              aria-label="Choose a screenshot"
-              :disabled="loading || aiLoading"
-              @change="selectFile"
-            />
-
-            <button
-              :disabled="loading || aiLoading || !selectedFile"
-              @click="uploadScreenshot"
-            >
-              {{ loading ? "Uploading..." : "Upload Screenshot" }}
-            </button>
-
-            <p v-if="screenshotId" class="form-hint" role="status">
-              Screenshot uploaded. Continue below to generate or enter your intended action.
-            </p>
-          </div>
-
-          <div v-if="uploadPreviewUrl" class="upload-preview">
-            <img
-              :src="uploadPreviewUrl"
-              :alt="`Preview of ${selectedFile?.name || 'selected screenshot'}`"
-              class="upload-preview-image"
-            />
-            <p class="form-hint">{{ screenshotId ? "Uploaded screenshot" : "Selected screenshot preview" }}</p>
-          </div>
+        <button
+          type="button"
+          class="drop-zone"
+          :class="{ 'has-preview': !!uploadPreviewUrl, 'is-dragging': draggingFile }"
+          :disabled="loading || aiLoading"
+          @click="chooseScreenshot"
+          @dragover.prevent="draggingFile = true"
+          @dragleave.prevent="draggingFile = false"
+          @drop.prevent="handleDroppedFile"
+          :aria-label="selectedFile ? 'Change selected screenshot' : 'Choose a screenshot'"
+        >
+          <template v-if="uploadPreviewUrl">
+            <img :src="uploadPreviewUrl" :alt="`Preview of ${selectedFile?.name || 'selected screenshot'}`" />
+            <span class="drop-zone-caption">Click or drop to change screenshot</span>
+          </template>
+          <template v-else>
+            <span class="upload-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5" /></svg>
+            </span>
+            <strong>Choose a screenshot</strong>
+            <span>or drag and drop it here</span>
+          </template>
+        </button>
+        <input
+          ref="uploadInput"
+          class="visually-hidden-file"
+          type="file"
+          accept=".png,.jpg,.jpeg,.webp,.gif,.heic,.heif,image/*"
+          aria-label="Choose a screenshot file"
+          :disabled="loading || aiLoading"
+          @change="selectFile"
+        />
+        <div v-if="selectedFile" class="upload-footer">
+          <span class="file-name">Selected: {{ selectedFile.name }}</span>
+          <button type="button" class="upload-submit" :disabled="loading || aiLoading || !!screenshotId" @click="uploadScreenshot">
+            {{ loading ? 'Uploading...' : screenshotId ? 'Screenshot uploaded ✓' : 'Upload Screenshot →' }}
+          </button>
         </div>
+        <p v-if="screenshotId" class="form-hint" role="status">Screenshot uploaded. Add your action below.</p>
       </section>
 
-      <section v-if="screenshotId" class="card">
-        <h2>2. Review your intention</h2>
+      <section class="card step-card action-card">
+        <div class="step-heading"><span class="step-number">02</span><div>
+          <h2>Name the action</h2>
+          <p>What do you want to remember?</p>
+        </div></div>
 
-        <p>
-          Generate an AI suggestion or describe what you want to remember
-          yourself.
-        </p>
 
         <div v-if="!inferenceId" class="ai-suggestion-section">
           <button
             type="button"
-            class="primary"
-            :disabled="loading || aiLoading"
+            class="primary ai-button"
+            :disabled="loading || aiLoading || !screenshotId"
             @click="generateAISuggestion"
           >
             {{
@@ -891,6 +923,7 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
+        <p v-if="!screenshotId" class="form-hint">Upload a screenshot above to create a task.</p>
         <label for="intention-description" class="intention-label">
           Intended action
         </label>
@@ -898,7 +931,7 @@ onBeforeUnmount(() => {
         <textarea
           id="intention-description"
           v-model="intention"
-          placeholder="e.g. Register for the career fair by Friday"
+          placeholder="e.g. Register for the career fair"
           rows="3"
           aria-label="Intended action"
           :disabled="aiLoading"
@@ -906,7 +939,7 @@ onBeforeUnmount(() => {
 
         <div class="task-reminder">
           <label for="new-task-reminder">
-            Suggested reminder (optional)
+            Add a reminder (optional)
           </label>
 
           <input
@@ -921,13 +954,14 @@ onBeforeUnmount(() => {
         </div>
 
         <button
-          class="primary"
-          :disabled="loading || aiLoading || !intention.trim()"
+          class="primary primary-button"
+          :disabled="loading || aiLoading || !screenshotId || !intention.trim()"
           @click="confirmInference"
         >
-          {{ loading ? "Creating Task..." : "Confirm and Create Task" }}
+          {{ loading ? "Creating Task..." : "Create task  →" }}
         </button>
       </section>
+      </div>
 
       <p v-if="error" class="error" role="alert">
         {{ error }}
@@ -937,8 +971,8 @@ onBeforeUnmount(() => {
         {{ message }}
       </p>
 
-      <section class="card">
-        <h2>My Tasks</h2>
+      <section class="card tasks-section">
+        <div class="section-heading"><h2>My tasks</h2><span class="task-count">{{ remainingTasks }} {{ remainingTasks === 1 ? "task" : "tasks" }} left</span></div>
 
         <div class="task-reminder">
           <button
@@ -984,18 +1018,21 @@ onBeforeUnmount(() => {
           </ul>
         </div>
 
-        <p>
-          {{ remainingTasks }}
-          {{ remainingTasks === 1 ? "task" : "tasks" }}
-          remaining
-        </p>
 
         <p v-if="tasks.length === 0">
           No tasks yet. Upload a screenshot to get started.
         </p>
 
         <ul v-else class="task-list">
-          <li v-for="task in tasks" :key="task.task">
+          <li v-for="task in tasks" :key="task.task" class="task" :class="{ 'is-done': task.completed }">
+            <input
+              class="task-check"
+              type="checkbox"
+              :checked="task.completed"
+              :aria-label="`${task.completed ? 'Mark incomplete' : 'Mark complete'}: ${task.description}`"
+              @change="toggleTaskCompletion(task)"
+            />
+            <span class="task-accent" :class="['berry','blue','green','yellow'][tasks.indexOf(task) % 4]" aria-hidden="true"></span>
             <div class="task-content">
               <template v-if="editingTaskId === task.task">
                 <div class="task-edit">
@@ -1019,34 +1056,20 @@ onBeforeUnmount(() => {
 
               <template v-else>
                 <div class="task-header">
-                  <label class="task-checkbox-label">
-                    <input
-                      type="checkbox"
-                      :checked="task.completed"
-                      @change="toggleTaskCompletion(task)"
-                    />
-
-                    <span :class="{ completed: task.completed }">
-                      {{ task.description }}
-                    </span>
-                  </label>
-
-                  <div class="actions">
-                    <button @click="startEditing(task)">
-                      Edit
-                    </button>
-
-                    <button
-                      class="danger"
-                      @click="deleteTask(task)"
-                    >
-                      Delete
-                    </button>
+                  <div class="task-title-block">
+                    <span class="task-title" :class="{ completed: task.completed }">{{ task.description }}</span>
+                    <span class="task-subtitle">{{ task.completed ? 'Completed' : task.reminderAt ? formatReminder(task.reminderAt, task.reminderDateOnly) : 'No reminder' }}</span>
+                  </div>
+                  <div class="task-row-actions">
+                    <button type="button" class="task-more" :aria-expanded="!!expandedTaskDetails[task.task]" :aria-label="`More options for ${task.description}`" @click="toggleTaskDetails(task.task)">⋯</button>
+                    <button type="button" class="task-delete" :aria-label="`Delete ${task.description}`" @click="deleteTask(task)">×</button>
                   </div>
                 </div>
               </template>
 
-              <div class="task-reminder">
+              <div v-if="expandedTaskDetails[task.task] || editingReminderId === task.task" class="task-details">
+                <div class="actions"><button type="button" @click="startEditing(task)">Edit task</button></div>
+                <div class="task-reminder">
                 <div v-if="editingReminderId === task.task">
                   <label :for="`reminder-${task.task}`">
                     Reminder date
@@ -1155,6 +1178,7 @@ onBeforeUnmount(() => {
                   </p>
                 </div>
               </div>
+              </div>
             </div>
           </li>
         </ul>
@@ -1163,48 +1187,3 @@ onBeforeUnmount(() => {
   </main>
 </template>
 
-<style scoped>
-.upload-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-.upload-controls {
-  flex: 1 1 280px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-}
-.upload-controls input[type="file"] {
-  max-width: 100%;
-}
-.upload-preview {
-  flex: 0 1 280px;
-  min-width: 0;
-  max-width: 100%;
-  text-align: center;
-}
-.upload-preview-image {
-  display: block;
-  max-width: 100%;
-  max-height: 280px;
-  width: auto;
-  height: auto;
-  margin: 0 auto;
-  object-fit: contain;
-  border: 1px solid #dedede;
-  border-radius: 12px;
-}
-.upload-preview .form-hint {
-  margin-top: 8px;
-}
-@media (max-width: 600px) {
-  .upload-preview { flex-basis: 100%; }
-}
-.ai-suggestion-hint {
-  margin-top: 16px;
-}
-</style>
