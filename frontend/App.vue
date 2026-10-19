@@ -27,6 +27,12 @@ const selectedFile = ref(null);
 const uploadPreviewUrl = ref("");
 const uploadInput = ref(null);
 const draggingFile = ref(false);
+// Only one creation step is expanded at a time; saved tasks remain visible.
+const activeCreationStep = ref(null);
+function toggleCreationStep(step) {
+  activeCreationStep.value = activeCreationStep.value === step ? null : step;
+}
+
 const expandedTaskDetails = ref({});
 const screenshotId = ref("");
 const imageUrl = ref("");
@@ -155,6 +161,7 @@ function clearUploadPreview() {
 }
 
 function clearWorkspace() {
+  activeCreationStep.value = null;
   clearUploadPreview();
   expandedTaskDetails.value = {};
   selectedFile.value = null;
@@ -317,6 +324,7 @@ async function uploadScreenshot() {
     });
 
     screenshotId.value = data.screenshot;
+    activeCreationStep.value = "action";
     imageUrl.value = `${API}${data.imageUrl}`;
     inferenceId.value = "";
       intention.value = "";
@@ -520,6 +528,7 @@ async function confirmInference() {
     suggestedReminderTime.value = "";
     suggestedHasTime.value = false;
 
+    activeCreationStep.value = null;
     message.value = reminderMessage;
   } catch (err) {
     error.value = err.message;
@@ -848,11 +857,15 @@ onBeforeUnmount(() => {
 
     <template v-else>
       <div class="workspace">
-      <section class="card step-card upload-card">
-        <div class="step-heading"><span class="step-number">01</span><div>
-          <h2>Add a screenshot</h2>
-          <p>PNG, JPG, WEBP, GIF, or HEIC</p>
-        </div></div>
+      <section class="card step-card upload-card" :class="{ 'is-collapsed': activeCreationStep !== 'upload' }">
+        <button type="button" class="step-toggle" :aria-expanded="activeCreationStep === 'upload'" aria-controls="snapback-upload-panel" @click="toggleCreationStep('upload')">
+          <span class="step-heading"><span class="step-number">01</span><span class="step-heading-copy">
+            <span class="step-title">Add a screenshot</span>
+            <span class="step-subtitle">{{ screenshotId ? 'Screenshot uploaded ✓' : selectedFile ? selectedFile.name : 'PNG, JPG, WEBP, GIF, or HEIC' }}</span>
+          </span></span>
+          <span class="step-chevron" aria-hidden="true">{{ activeCreationStep === 'upload' ? '−' : '+' }}</span>
+        </button>
+        <div v-show="activeCreationStep === 'upload'" id="snapback-upload-panel" class="step-panel">
 
         <button
           type="button"
@@ -893,13 +906,18 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <p v-if="screenshotId" class="form-hint" role="status">Screenshot uploaded. Add your action below.</p>
+        </div>
       </section>
 
-      <section class="card step-card action-card">
-        <div class="step-heading"><span class="step-number">02</span><div>
-          <h2>Name the action</h2>
-          <p>What do you want to remember?</p>
-        </div></div>
+      <section class="card step-card action-card" :class="{ 'is-collapsed': activeCreationStep !== 'action' }">
+        <button type="button" class="step-toggle" :aria-expanded="activeCreationStep === 'action'" aria-controls="snapback-action-panel" @click="toggleCreationStep('action')">
+          <span class="step-heading"><span class="step-number">02</span><span class="step-heading-copy">
+            <span class="step-title">Name the action</span>
+            <span class="step-subtitle">{{ screenshotId ? 'What do you want to remember?' : 'Upload a screenshot to begin' }}</span>
+          </span></span>
+          <span class="step-chevron" aria-hidden="true">{{ activeCreationStep === 'action' ? '−' : '+' }}</span>
+        </button>
+        <div v-show="activeCreationStep === 'action'" id="snapback-action-panel" class="step-panel">
 
 
         <div v-if="!inferenceId" class="ai-suggestion-section">
@@ -960,6 +978,7 @@ onBeforeUnmount(() => {
         >
           {{ loading ? "Creating Task..." : "Create task  →" }}
         </button>
+        </div>
       </section>
       </div>
 
