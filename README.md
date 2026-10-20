@@ -13,9 +13,12 @@ The public project repository contains the SnapBack implementation and the follo
 | Concept and application specifications | [design/](design/) |
 | Automated concept, composition, and security tests | [tests/](tests/) |
 | Saved automated test output | [test-output.txt](test-output.txt) |
-| [Visual design study slides](https://docs.google.com/presentation/d/1K_j7bY3KXAO_XBKbqDzAkAdU4lZlrLt-z_gYEMc0r3M/edit?usp=sharing) |
-| Updated user journey | TODO: Add the file to this repository and link it here |
-| Narrated screen recording (two minutes or less) | TODO: Add the YouTube URL here |
+
+[Visual design study slides](https://docs.google.com/presentation/d/1K_j7bY3KXAO_XBKbqDzAkAdU4lZlrLt-z_gYEMc0r3M/edit?usp=sharing)
+
+[Updated User Journey](design/user-journey.md)
+
+Narrated screen recording  TODO: Add the YouTube URL here
 
 **Deployed application:** https://snapback.mit-sdg.dev
 

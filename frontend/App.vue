@@ -232,10 +232,16 @@ async function submitAuth() {
       }),
     });
 
+    const justRegistered = authMode.value === "register";
     clearWorkspace();
     user.value = data.user;
     authPassword.value = "";
     await loadTasks();
+    // Guide newly registered users directly to their first screenshot upload.
+    // Returning users keep both creation sections collapsed.
+    if (justRegistered) {
+      activeCreationStep.value = "upload";
+    }
   } catch (err) {
     authError.value = err.message;
   } finally {
