@@ -18,7 +18,7 @@ The public project repository contains the SnapBack implementation and the follo
 
 [Updated User Journey](design/user-journey.md)
 
-Narrated screen recording  TODO: Add the YouTube URL here
+[Screen Recording](https://youtu.be/s4aHYLSu6bU)
 
 **Deployed application:** https://snapback.mit-sdg.dev
 
