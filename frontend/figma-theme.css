@@ -287,3 +287,23 @@ body #app main.container.snapback-shell {
   .snapback-shell .step-title { font-size:1.15rem; }
   .snapback-shell .step-toggle .step-heading { gap:12px; }
 }
+
+/* Task overflow menu: one aligned action row with consistent spacing. */
+.snapback-shell .task-detail-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+}
+.snapback-shell .task-detail-toolbar button {
+  margin: 0;
+  white-space: nowrap;
+}
+.snapback-shell .task-reminder-editor,
+.snapback-shell .task-details .screenshot-container {
+  margin-top: 18px;
+}
+@media (max-width: 540px) {
+  .snapback-shell .task-detail-toolbar { gap: 10px; }
+}

@@ -420,8 +420,7 @@ async function generateAISuggestion() {
     intention.value = data.description.trim();
     applySuggestedReminder(data);
 
-    message.value =
-      "AI suggestion generated. Review and edit it before creating your task.";
+    message.value = "";
   } catch (err) {
     error.value = err.message;
   } finally {
@@ -1093,116 +1092,76 @@ onBeforeUnmount(() => {
               </template>
 
               <div v-if="expandedTaskDetails[task.task] || editingReminderId === task.task" class="task-details">
-                <div class="actions"><button type="button" @click="startEditing(task)">Edit task</button></div>
-                <div class="task-reminder">
-                <div v-if="editingReminderId === task.task">
-                  <label :for="`reminder-${task.task}`">
-                    Reminder date
-                  </label>
+                <div class="task-detail-toolbar">
+                  <button
+                    v-if="task.imageUrl"
+                    type="button"
+                    class="screenshot-toggle"
+                    :aria-expanded="!!expandedScreenshots[task.task]"
+                    @click="toggleScreenshot(task.task)"
+                  >
+                    {{ expandedScreenshots[task.task] ? "Hide Screenshot" : "View Screenshot" }}
+                  </button>
+                  <button type="button" @click="startEditing(task)">Edit task</button>
+                  <button
+                    type="button"
+                    class="screenshot-toggle"
+                    @click="startReminderEdit(task)"
+                  >
+                    {{ task.reminderAt ? "Edit Reminder" : "Set Reminder" }}
+                  </button>
+                </div>
 
+                <div v-if="editingReminderId === task.task" class="task-reminder-editor">
+                  <label :for="`reminder-${task.task}`">Reminder date</label>
                   <input
                     :id="`reminder-${task.task}`"
                     v-model="reminderInput"
                     type="date"
                     :disabled="savingReminder"
                   />
-                  <label class="form-hint"><input v-model="reminderHasTime" type="checkbox" :disabled="savingReminder" /> Set a specific notification time</label>
-                  <input v-if="reminderHasTime" v-model="reminderTimeInput" type="time" :disabled="savingReminder" aria-label="Reminder time" />
-                  <p class="form-hint" v-if="reminderInput && !reminderHasTime">Notification at 9:00 AM on this date.</p>
-
+                  <label class="form-hint">
+                    <input v-model="reminderHasTime" type="checkbox" :disabled="savingReminder" />
+                    Set a specific notification time
+                  </label>
+                  <input
+                    v-if="reminderHasTime"
+                    v-model="reminderTimeInput"
+                    type="time"
+                    :disabled="savingReminder"
+                    aria-label="Reminder time"
+                  />
+                  <p v-if="reminderInput && !reminderHasTime" class="form-hint">
+                    Notification at 9:00 AM on this date.
+                  </p>
                   <div class="actions">
                     <button
                       class="primary"
                       :disabled="savingReminder || !reminderInput"
                       @click="saveReminder(task)"
-                    >
-                      {{
-                        savingReminder
-                          ? "Saving..."
-                          : "Save Reminder"
-                      }}
-                    </button>
-
-                    <button
-                      :disabled="savingReminder"
-                      @click="cancelReminderEdit"
-                    >
-                      Cancel
-                    </button>
-
+                    >{{ savingReminder ? "Saving..." : "Save Reminder" }}</button>
+                    <button :disabled="savingReminder" @click="cancelReminderEdit">Cancel</button>
                     <button
                       v-if="task.reminderAt"
                       class="danger"
                       :disabled="savingReminder"
                       @click="removeReminder(task)"
-                    >
-                      Remove Reminder
-                    </button>
+                    >Remove Reminder</button>
                   </div>
                 </div>
 
-                <div v-else>
-                  <p
-                    v-if="task.reminderAt"
-                    class="form-hint"
-                  >
-                    Reminder:
-                    {{ formatReminder(task.reminderAt, task.reminderDateOnly) }}
-                  </p>
-
-                  <p v-else class="form-hint">
-                    No reminder set.
-                  </p>
-
-                  <button
-                    class="screenshot-toggle"
-                    @click="startReminderEdit(task)"
-                  >
-                    {{
-                      task.reminderAt
-                        ? "Edit Reminder"
-                        : "Set Reminder"
-                    }}
-                  </button>
-                </div>
-              </div>
-
-              <div
-                v-if="task.imageUrl"
-                class="screenshot-section"
-              >
-                <button
-                  class="screenshot-toggle"
-                  :aria-expanded="
-                    !!expandedScreenshots[task.task]
-                  "
-                  @click="toggleScreenshot(task.task)"
-                >
-                  {{
-                    expandedScreenshots[task.task]
-                      ? "Hide Screenshot"
-                      : "View Screenshot"
-                  }}
-                </button>
-
                 <div
-                  v-if="expandedScreenshots[task.task]"
+                  v-if="task.imageUrl && expandedScreenshots[task.task]"
                   class="screenshot-container"
                 >
                   <img
                     v-if="screenshotObjectUrls[task.task]"
                     :src="screenshotObjectUrls[task.task]"
-                    :alt="
-                      `Original screenshot for ${task.description}`
-                    "
+                    :alt="`Original screenshot for ${task.description}`"
                     class="task-screenshot"
                   />
-
-                  <p v-else class="form-hint">
-                    Screenshot could not be loaded.
-                  </p>
+                  <p v-else class="form-hint">Screenshot could not be loaded.</p>
                 </div>
-              </div>
               </div>
             </div>
           </li>
