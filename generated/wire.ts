@@ -3,6 +3,7 @@
 import type { applicationConceptSet as ApplicationConceptSet } from "../src/concepts.ts";
 
 type AtPath<T, P extends readonly string[]> = P extends readonly [infer H extends string, ...infer R extends string[]] ? H extends keyof T ? AtPath<T[H], R> : H extends `${number}` ? T extends readonly (infer Item)[] ? AtPath<Item, R> : never : never : T;
+type QueryRow<T> = T extends readonly (infer Row)[] ? Row : T;
 type OneOf<T extends readonly unknown[]> = T[number];
 type Jsonify<T> = T extends Date ? string : T extends null | boolean | number | string ? T : T extends (...args: never[]) => unknown ? never : T extends readonly (infer Item)[] ? Jsonify<Item>[] : T extends object ? { [K in keyof T]: Jsonify<T[K]> } : never;
 
@@ -19,5 +20,58 @@ export type SnapBackWire = {
       "confirmed": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["IntentionInferring"]["confirm"]>[0], ["inference"]>>;
     };
     error: { error: AppWideError | "INFERENCE_ALREADY_CONFIRMED" | "INFERENCE_NOT_FOUND" | "INVALID_INPUT" | "SCREENSHOT_NOT_FOUND" };
+  };
+  "/tasks/complete": {
+    input: {
+      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["complete"]>[0], ["task"]>>;
+    };
+    output: {
+      "updated": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["complete"]>[0], ["task"]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "TASK_NOT_FOUND" };
+  };
+  "/tasks/edit": {
+    input: {
+      "description": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["edit"]>[0], ["description"]>>;
+      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["edit"]>[0], ["task"]>>;
+    };
+    output: {
+      "updated": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["edit"]>[0], ["task"]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "TASK_NOT_FOUND" };
+  };
+  "/tasks/reminder": {
+    input: {
+      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "reminderAt": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["reminderAt"]>>;
+      "reminderDateOnly": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["reminderDateOnly"]>>;
+      "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["task"]>>;
+    };
+    output: {
+      "updated": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["task"]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_REMINDER" | "TASK_NOT_FOUND" };
+  };
+  "/tasks/remove": {
+    input: {
+      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["remove"]>[0], ["task"]>>;
+    };
+    output: {
+      "removed": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["remove"]>[0], ["task"]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "TASK_NOT_FOUND" };
+  };
+  "/tasks/reopen": {
+    input: {
+      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["reopen"]>[0], ["task"]>>;
+    };
+    output: {
+      "updated": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["reopen"]>[0], ["task"]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "TASK_NOT_FOUND" };
   };
 };

@@ -59,9 +59,9 @@ Defined in [TaskTracking](../design/concepts/TaskTracking.md), line 2.
 - `create(owner: User, source: Source, description: String) : returns (task: Task)`
 - `edit(task: Task, description: String) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
-- `setReminder(task: Task, reminderAt: ReminderTime) : returns ()`
+- `setReminder(task: Task, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
-  - Refuses `INVALID_REMINDER`: Reminder must be a valid UTC ISO timestamp or null.
+  - Refuses `INVALID_REMINDER`: Reminder must have a valid timestamp and reminder type.
 - `complete(task: Task) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
 - `reopen(task: Task) : returns ()`
@@ -71,13 +71,14 @@ Defined in [TaskTracking](../design/concepts/TaskTracking.md), line 2.
 
 #### Queries
 
-- `_get(task: Task) : optional (owner: User, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime)`
-- `_listByOwner(owner: User) : many (task: Task, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime)`
+- `_get(task: Task) : optional (owner: User, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly)`
+- `_listByOwner(owner: User) : many (task: Task, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly)`
 
 #### Instances
 
 - `TaskTracking` — instance of `TaskTracking` — [SnapBack Application Types](../design/types.md), line 23.
   - `Boolean` is `Boolean` — [SnapBack Application Types](../design/types.md), line 26.
+  - `ReminderDateOnly` is `Boolean` — [SnapBack Application Types](../design/types.md), line 28.
   - `ReminderTime` is `ReminderTime` — [SnapBack Application Types](../design/types.md), line 27.
   - `Source` is `IntentionInferring.Inference` — [SnapBack Application Types](../design/types.md), line 25.
   - `User` is `UserAuthentication.User` — [SnapBack Application Types](../design/types.md), line 24.
@@ -137,8 +138,8 @@ then
 ### SnapBack.Inferences.ConfirmInference:inference-missing
 
 Authored path: `SnapBack.Inferences.ConfirmInference`.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 8.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 15.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 9.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 12.
 
 ```reaction
 when RequestBoundary.request (inference, path: "/inferences/confirm", requestId)
@@ -151,8 +152,8 @@ then
 ### SnapBack.Inferences.ConfirmInference:screenshot-missing
 
 Authored path: `SnapBack.Inferences.ConfirmInference`.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 8.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 15.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 9.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 12.
 
 ```reaction
 when RequestBoundary.request (inference, path: "/inferences/confirm", requestId)
@@ -166,8 +167,8 @@ then
 ### SnapBack.Inferences.ConfirmInference:source-exists
 
 Authored path: `SnapBack.Inferences.ConfirmInference`.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 8.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 15.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 9.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 12.
 
 ```reaction
 when RequestBoundary.request (inference, path: "/inferences/confirm", requestId)
@@ -181,8 +182,8 @@ then
 ### SnapBack.Inferences.ConfirmInference:source-exists#2
 
 Authored path: `SnapBack.Inferences.ConfirmInference`.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 8.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 15.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 9.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 12.
 
 ```reaction
 when IntentionInferring.confirm (inference), asked by SnapBack.Inferences.ConfirmInference:source-exists
@@ -195,7 +196,8 @@ then
 ### TaskCreation.ConfirmedInferenceCreatesTask
 
 Authored path: `TaskCreation.ConfirmedInferenceCreatesTask`.
-- Covered by [SnapBack](../design/compositions/SnapBack.md), line 19.
+- Covered by [SnapBack](../design/compositions/SnapBack.md), line 15.
+- Covered by [TaskCreation](../design/compositions/TaskCreation.md), line 5.
 
 ```reaction
 when IntentionInferring.confirm (inference, description, screenshot)
@@ -203,6 +205,146 @@ where
   ScreenshotStoring._get (screenshot) has (owner)
 then
   TaskTracking.create (description, owner, source: inference)
+```
+
+### TaskManagement.Tasks.CompleteTask
+
+Authored path: `TaskManagement.Tasks.CompleteTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 7.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 15.
+
+```reaction
+when RequestBoundary.request (owner, path: "/tasks/complete", requestId, task)
+where
+  TaskTracking._get (task) has (owner)
+then
+  TaskTracking.complete (task)
+```
+
+### TaskManagement.Tasks.CompleteTask#2
+
+Authored path: `TaskManagement.Tasks.CompleteTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 7.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 15.
+
+```reaction
+when TaskTracking.complete (task), asked by TaskManagement.Tasks.CompleteTask
+where
+  earlier, RequestBoundary.request (owner, path: "/tasks/complete", requestId, task)
+then
+  RequestBoundary.respond (requestId, updated: task)
+```
+
+### TaskManagement.Tasks.EditTask
+
+Authored path: `TaskManagement.Tasks.EditTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 5.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 14.
+
+```reaction
+when RequestBoundary.request (description, owner, path: "/tasks/edit", requestId, task)
+where
+  TaskTracking._get (task) has (owner)
+then
+  TaskTracking.edit (description, task)
+```
+
+### TaskManagement.Tasks.EditTask#2
+
+Authored path: `TaskManagement.Tasks.EditTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 5.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 14.
+
+```reaction
+when TaskTracking.edit (description, task), asked by TaskManagement.Tasks.EditTask
+where
+  earlier, RequestBoundary.request (description, owner, path: "/tasks/edit", requestId, task)
+then
+  RequestBoundary.respond (requestId, updated: task)
+```
+
+### TaskManagement.Tasks.RemoveTask
+
+Authored path: `TaskManagement.Tasks.RemoveTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 11.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 18.
+
+```reaction
+when RequestBoundary.request (owner, path: "/tasks/remove", requestId, task)
+where
+  TaskTracking._get (task) has (owner)
+then
+  TaskTracking.remove (task)
+```
+
+### TaskManagement.Tasks.RemoveTask#2
+
+Authored path: `TaskManagement.Tasks.RemoveTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 11.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 18.
+
+```reaction
+when TaskTracking.remove (task), asked by TaskManagement.Tasks.RemoveTask
+where
+  earlier, RequestBoundary.request (owner, path: "/tasks/remove", requestId, task)
+then
+  RequestBoundary.respond (removed: task, requestId)
+```
+
+### TaskManagement.Tasks.ReopenTask
+
+Authored path: `TaskManagement.Tasks.ReopenTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 7.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 16.
+
+```reaction
+when RequestBoundary.request (owner, path: "/tasks/reopen", requestId, task)
+where
+  TaskTracking._get (task) has (owner)
+then
+  TaskTracking.reopen (task)
+```
+
+### TaskManagement.Tasks.ReopenTask#2
+
+Authored path: `TaskManagement.Tasks.ReopenTask`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 7.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 16.
+
+```reaction
+when TaskTracking.reopen (task), asked by TaskManagement.Tasks.ReopenTask
+where
+  earlier, RequestBoundary.request (owner, path: "/tasks/reopen", requestId, task)
+then
+  RequestBoundary.respond (requestId, updated: task)
+```
+
+### TaskManagement.Tasks.SetTaskReminder
+
+Authored path: `TaskManagement.Tasks.SetTaskReminder`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 9.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 17.
+
+```reaction
+when RequestBoundary.request (owner, path: "/tasks/reminder", reminderAt, reminderDateOnly, requestId, task)
+where
+  TaskTracking._get (task) has (owner)
+then
+  TaskTracking.setReminder (reminderAt, reminderDateOnly, task)
+```
+
+### TaskManagement.Tasks.SetTaskReminder#2
+
+Authored path: `TaskManagement.Tasks.SetTaskReminder`.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 9.
+- Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 17.
+
+```reaction
+when TaskTracking.setReminder (reminderAt, reminderDateOnly, task), asked by TaskManagement.Tasks.SetTaskReminder
+where
+  earlier, RequestBoundary.request (owner, path: "/tasks/reminder", reminderAt, reminderDateOnly, requestId, task)
+then
+  RequestBoundary.respond (requestId, updated: task)
 ```
 
 ## Endpoint input contracts
@@ -213,3 +355,8 @@ the path or missing key. A declared default fills an absent key. Endpoints
 not listed here have no explicit input contract.
 
 - `/inferences/confirm` — requires `inference`
+- `/tasks/complete` — requires `owner`, `task`
+- `/tasks/edit` — requires `owner`, `task`, `description`
+- `/tasks/reminder` — requires `owner`, `task`, `reminderAt`, `reminderDateOnly`
+- `/tasks/remove` — requires `owner`, `task`
+- `/tasks/reopen` — requires `owner`, `task`

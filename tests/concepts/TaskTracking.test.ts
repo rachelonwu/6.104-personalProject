@@ -25,6 +25,7 @@ describe("TaskTracking", () => {
         description: "Attend career fair",
         completed: false,
         reminderAt: null,
+        reminderDateOnly: false,
       },
     ]);
   });
@@ -59,7 +60,7 @@ describe("TaskTracking", () => {
 
     const reminderAt = "2026-10-21T22:00:00.000Z";
 
-    concept.setReminder({ task, reminderAt });
+    concept.setReminder({ task, reminderAt, reminderDateOnly: false });
 
     expect(concept._get({ task })[0]?.reminderAt).toBe(reminderAt);
   });
@@ -76,11 +77,13 @@ describe("TaskTracking", () => {
     concept.setReminder({
       task,
       reminderAt: "2026-10-21T22:00:00.000Z",
+    reminderDateOnly: false,
     });
 
     concept.setReminder({
       task,
       reminderAt: "2026-10-22T18:00:00.000Z",
+    reminderDateOnly: false,
     });
 
     expect(concept._get({ task })[0]?.reminderAt).toBe(
@@ -100,9 +103,10 @@ describe("TaskTracking", () => {
     concept.setReminder({
       task,
       reminderAt: "2026-10-21T22:00:00.000Z",
+    reminderDateOnly: false,
     });
 
-    concept.setReminder({ task, reminderAt: null });
+    concept.setReminder({ task, reminderAt: null, reminderDateOnly: false });
 
     expect(concept._get({ task })[0]?.reminderAt).toBeNull();
   });
@@ -120,6 +124,7 @@ describe("TaskTracking", () => {
       concept.setReminder({
         task,
         reminderAt: "not-a-date",
+        reminderDateOnly: false,
       }),
     ).toThrow(InvalidReminder);
 
@@ -127,6 +132,7 @@ describe("TaskTracking", () => {
       concept.setReminder({
         task,
         reminderAt: "2026-02-30T22:00:00.000Z",
+        reminderDateOnly: false,
       }),
     ).toThrow(InvalidReminder);
 
@@ -140,6 +146,7 @@ describe("TaskTracking", () => {
       concept.setReminder({
         task: "missing-task",
         reminderAt: "2026-10-21T22:00:00.000Z",
+        reminderDateOnly: false,
       }),
     ).toThrow(TaskNotFound);
   });
@@ -245,6 +252,7 @@ describe("TaskTracking", () => {
         description: "Attend career fair",
         completed: false,
         reminderAt: null,
+        reminderDateOnly: false,
       },
       {
         task: "task-3",
@@ -252,9 +260,70 @@ describe("TaskTracking", () => {
         description: "Submit internship application",
         completed: false,
         reminderAt: null,
+        reminderDateOnly: false,
       },
     ]);
 
     expect(concept._listByOwner({ owner: "studentC" })).toEqual([]);
   });
+  test("setReminder stores a date-only reminder and clears both fields", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Submit assignment",
+    });
+    const reminderAt = "2026-11-01T13:00:00.000Z";
+
+    concept.setReminder({ task, reminderAt, reminderDateOnly: true });
+    expect(concept._get({ task })[0]).toMatchObject({
+      reminderAt,
+      reminderDateOnly: true,
+    });
+
+    concept.setReminder({ task, reminderAt: null, reminderDateOnly: false });
+    expect(concept._get({ task })[0]).toMatchObject({
+      reminderAt: null,
+      reminderDateOnly: false,
+    });
+  });
+
+  test("setReminder rejects date-only without a timestamp and preserves state", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Submit assignment",
+    });
+
+    expect(() =>
+      concept.setReminder({ task, reminderAt: null, reminderDateOnly: true }),
+    ).toThrow(InvalidReminder);
+    expect(concept._get({ task })[0]).toMatchObject({
+      reminderAt: null,
+      reminderDateOnly: false,
+    });
+  });
+
+  test("editing and completing a task preserve its reminder type", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+    const { task } = concept.create({
+      owner: "studentA",
+      source: "inference-001",
+      description: "Submit assignment",
+    });
+    const reminderAt = "2026-11-01T13:00:00.000Z";
+    concept.setReminder({ task, reminderAt, reminderDateOnly: true });
+    concept.edit({ task, description: "Submit final assignment" });
+    concept.complete({ task });
+    concept.reopen({ task });
+
+    expect(concept._get({ task })[0]).toMatchObject({
+      description: "Submit final assignment",
+      completed: false,
+      reminderAt,
+      reminderDateOnly: true,
+    });
+  });
+
 });

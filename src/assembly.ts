@@ -3,6 +3,7 @@ import { assemble, type ImplementationOverrides } from "@mit-sdg/sync-engine/ass
 import { applicationConceptSet } from "./concepts.js";
 import { composition as snapBackComposition } from "./compositions/SnapBack.js";
 import { composition as taskCreationComposition } from "./compositions/TaskCreation.js";
+import { composition as taskManagementComposition } from "./compositions/TaskManagement.js";
 
 export type SnapBackOverrides = ImplementationOverrides<typeof applicationConceptSet>;
 
@@ -16,6 +17,7 @@ export function assembleApplication(instances: SnapBackOverrides = {}) {
     composition: {
       SnapBack: snapBackComposition,
       TaskCreation: taskCreationComposition,
+      TaskManagement: taskManagementComposition,
     },
   });
 }

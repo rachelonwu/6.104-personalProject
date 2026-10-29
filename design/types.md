@@ -25,4 +25,5 @@ instantiate TaskTracking with
   Source is IntentionInferring.Inference
   Boolean is Boolean
   ReminderTime is ReminderTime
+  ReminderDateOnly is Boolean
 ```

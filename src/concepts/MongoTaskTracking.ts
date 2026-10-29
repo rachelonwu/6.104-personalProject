@@ -12,6 +12,7 @@ type Task = {
   description: string;
   completed: boolean;
   reminderAt?: string | null;
+  reminderDateOnly?: boolean;
 };
 
 function validateReminder(reminderAt: string | null): void {
@@ -59,6 +60,7 @@ export class MongoTaskTrackingConcept {
       description,
       completed: false,
       reminderAt: null,
+      reminderDateOnly: false,
     });
 
     return { task };
@@ -86,15 +88,31 @@ export class MongoTaskTrackingConcept {
   async setReminder({
     task,
     reminderAt,
+    reminderDateOnly,
   }: {
     task: string;
     reminderAt: string | null;
+    reminderDateOnly: boolean;
   }) {
     validateReminder(reminderAt);
 
+    if (
+      typeof reminderDateOnly !== "boolean" ||
+      (reminderAt === null && reminderDateOnly)
+    ) {
+      throw new InvalidReminder(
+        "Reminder must have a valid timestamp and reminder type.",
+      );
+    }
+
     const result = await this.tasks.updateOne(
       { task },
-      { $set: { reminderAt } },
+      {
+        $set: {
+          reminderAt,
+          reminderDateOnly,
+        },
+      },
     );
 
     if (result.matchedCount === 0) {
@@ -150,6 +168,8 @@ export class MongoTaskTrackingConcept {
     description: string;
     completed: boolean;
     reminderAt: string | null;
+    reminderDateOnly: boolean;
+
   }>> {
     const found = await this.tasks.findOne({ task });
 
@@ -163,6 +183,7 @@ export class MongoTaskTrackingConcept {
       description: found.description,
       completed: found.completed,
       reminderAt: found.reminderAt ?? null,
+      reminderDateOnly: found.reminderDateOnly ?? false,
     }];
   }
 
@@ -176,6 +197,7 @@ export class MongoTaskTrackingConcept {
     description: string;
     completed: boolean;
     reminderAt: string | null;
+    reminderDateOnly: boolean;
   }>> {
     const found = await this.tasks
       .find({ owner })
@@ -186,6 +208,7 @@ export class MongoTaskTrackingConcept {
         description: 1,
         completed: 1,
         reminderAt: 1,
+        reminderDateOnly: 1,
       })
       .toArray();
 
@@ -195,6 +218,7 @@ export class MongoTaskTrackingConcept {
       description: task.description,
       completed: task.completed,
       reminderAt: task.reminderAt ?? null,
+      reminderDateOnly: task.reminderDateOnly ?? false,
     }));
   }
 }

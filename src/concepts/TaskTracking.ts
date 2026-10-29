@@ -10,6 +10,7 @@ type Task = {
   description: string;
   completed: boolean;
   reminderAt: string | null;
+  reminderDateOnly: boolean;
 };
 
 function validateReminder(reminderAt: string | null): void {
@@ -54,6 +55,7 @@ export class TaskTrackingConcept {
       description,
       completed: false,
       reminderAt: null,
+      reminderDateOnly: false,
     });
 
     return { task };
@@ -77,23 +79,36 @@ export class TaskTrackingConcept {
   }
 
   setReminder({
-    task,
-    reminderAt,
-  }: {
-    task: string;
-    reminderAt: string | null;
-  }) {
-    const found = this.tasks.find((t) => t.task === task);
+  task,
+  reminderAt,
+  reminderDateOnly,
+}: {
+  task: string;
+  reminderAt: string | null;
+  reminderDateOnly: boolean;
+}) {
+  const found = this.tasks.find((t) => t.task === task);
 
-    if (found === undefined) {
-      throw new TaskNotFound("The task does not exist.");
-    }
-
-    validateReminder(reminderAt);
-    found.reminderAt = reminderAt;
-
-    return {};
+  if (found === undefined) {
+    throw new TaskNotFound("The task does not exist.");
   }
+
+  validateReminder(reminderAt);
+
+  if (
+    typeof reminderDateOnly !== "boolean" ||
+    (reminderAt === null && reminderDateOnly)
+  ) {
+    throw new InvalidReminder(
+      "Reminder must have a valid timestamp and reminder type.",
+    );
+  }
+
+  found.reminderAt = reminderAt;
+  found.reminderDateOnly = reminderDateOnly;
+
+  return {};
+}
 
   complete({ task }: { task: string }) {
     const found = this.tasks.find((t) => t.task === task);
@@ -134,6 +149,7 @@ export class TaskTrackingConcept {
     description: string;
     completed: boolean;
     reminderAt: string | null;
+    reminderDateOnly: boolean;
   }> {
     const found = this.tasks.find((t) => t.task === task);
 
@@ -147,6 +163,7 @@ export class TaskTrackingConcept {
       description: found.description,
       completed: found.completed,
       reminderAt: found.reminderAt,
+      reminderDateOnly: found.reminderDateOnly,
     }];
   }
 
@@ -156,6 +173,7 @@ export class TaskTrackingConcept {
     description: string;
     completed: boolean;
     reminderAt: string | null;
+    reminderDateOnly: boolean;
   }> {
     return this.tasks
       .filter((t) => t.owner === owner)
@@ -165,6 +183,7 @@ export class TaskTrackingConcept {
         description: t.description,
         completed: t.completed,
         reminderAt: t.reminderAt,
+        reminderDateOnly: t.reminderDateOnly,
       }));
   }
 }

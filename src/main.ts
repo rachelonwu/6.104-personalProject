@@ -913,33 +913,48 @@ Bun.serve({
         }
         if (
           update.reminderDateOnly === true &&
-          (typeof update.reminderAt !== "string" || !Number.isFinite(Date.parse(update.reminderAt)))
+          (
+            ("reminderAt" in update
+              ? update.reminderAt
+              : existing[0].reminderAt) === null
+          )
         ) {
-          return json({ error: "Date-only reminders require a reminder timestamp." }, 400);
+          return json(
+            { error: "Date-only reminders require a reminder timestamp." },
+            400,
+          );
         }
         // All supplied values are valid; apply the updates.
         if (typeof update.description === "string") {
-          await tasks.edit({
-            task,
-            description: update.description.trim(),
+          const result = await gateway.invoke("/tasks/edit", {
+            owner, task, description: update.description.trim(),
           });
+          if (!result.ok) return json({ error: result.error }, 400);
         }
         if (update.completed === true) {
-          await tasks.complete({ task });
+          const result = await gateway.invoke("/tasks/complete", { owner, task });
+          if (!result.ok) return json({ error: result.error }, 400);
         } else if (update.completed === false) {
-          await tasks.reopen({ task });
+          const result = await gateway.invoke("/tasks/reopen", { owner, task });
+          if (!result.ok) return json({ error: result.error }, 400);
         }
-        if ("reminderAt" in update) {
-          await tasks.setReminder({
-            task,
-            reminderAt: update.reminderAt as string | null,
+        if ("reminderAt" in update || "reminderDateOnly" in update) {
+          const reminderAt =
+            "reminderAt" in update
+              ? (update.reminderAt as string | null)
+              : existing[0].reminderAt;
+
+          const reminderDateOnly =
+            reminderAt === null
+              ? false
+              : "reminderDateOnly" in update
+                ? (update.reminderDateOnly as boolean)
+                : existing[0].reminderDateOnly;
+
+          const result = await gateway.invoke("/tasks/reminder", {
+            owner, task, reminderAt, reminderDateOnly,
           });
-        }
-        if ("reminderDateOnly" in update || "reminderAt" in update) {
-          await database.collection("tasks").updateOne(
-            { task, owner },
-            { $set: { reminderDateOnly: update.reminderAt === null ? false : update.reminderDateOnly === true } },
-          );
+          if (!result.ok) return json({ error: result.error }, 400);
         }
         return json({ updated: task });
       }
@@ -956,7 +971,8 @@ Bun.serve({
         ) {
           return json({ error: "Task not found." }, 404);
         }
-        await tasks.remove({ task });
+        const result = await gateway.invoke("/tasks/remove", { owner, task });
+        if (!result.ok) return json({ error: result.error }, 400);
         return json({ removed: task });
       }
             return json({ error: "Route not found." }, 404);

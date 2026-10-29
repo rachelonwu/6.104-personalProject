@@ -23,6 +23,10 @@ external Boolean
 
 external ReminderTime
   An optional reminder timestamp, represented as a UTC ISO 8601 string or null.
+
+external ReminderDateOnly
+  A Boolean indicating whether the reminder represents a calendar date
+  without a user-specified time.
 ```
 
 ## State
@@ -34,6 +38,7 @@ a set of Tasks with
   a description String
   a completed Boolean
   a reminderAt ReminderTime
+  a reminderDateOnly ReminderDateOnly
 ```
 
 ## Actions
@@ -42,7 +47,7 @@ a set of Tasks with
 create(owner: User, source: Source, description: String) : returns (task: Task)
   where true
   then
-    add a new task with owner, source, description, completed false, and reminderAt null
+    add a new task with owner, source, description, completed false, reminderAt null, and reminderDateOnly false
     returns task
 
 edit(task: Task, description: String) : returns ()
@@ -54,17 +59,18 @@ edit(task: Task, description: String) : returns ()
   then
     refuses TASK_NOT_FOUND "The task does not exist."
 
-setReminder(task: Task, reminderAt: ReminderTime) : returns ()
-  where task is in Tasks and reminderAt is a valid UTC ISO 8601 timestamp or null
+setReminder(task: Task, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly) : returns ()
+  where task is in Tasks and reminderAt is a valid UTC ISO 8601 timestamp or null, reminderDateOnly is a Boolean, and reminderDateOnly is false when reminderAt is null
   then
     update task's reminderAt to reminderAt
+    update task's reminderDateOnly to reminderDateOnly
     returns
   where task is not in Tasks
   then
     refuses TASK_NOT_FOUND "The task does not exist."
-  where reminderAt is not a valid UTC ISO 8601 timestamp or null
+  where reminderAt is not a valid UTC ISO 8601 timestamp or null, or reminderDateOnly is not a Boolean, or reminderDateOnly is true when reminderAt is null
   then
-    refuses INVALID_REMINDER "Reminder must be a valid UTC ISO timestamp or null."
+    refuses INVALID_REMINDER "Reminder must have a valid timestamp and reminder type."
 
 complete(task: Task) : returns ()
   where task is in Tasks
@@ -97,10 +103,10 @@ remove(task: Task) : returns ()
 ## Queries
 
 ```queries
-_get(task: Task) : optional (owner: User, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime)
+_get(task: Task) : optional (owner: User, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly)
   Returns the task's stored information when it exists.
   Returns no row when the task does not exist.
 
-_listByOwner(owner: User) : many (task: Task, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime)
+_listByOwner(owner: User) : many (task: Task, source: Source, description: String, completed: Boolean, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly)
   Returns all tasks belonging to the specified owner.
 ```
