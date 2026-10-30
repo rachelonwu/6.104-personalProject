@@ -1,5 +1,5 @@
 
-# SnapBack — Updated User Journey
+# SnapBack — User Journey
 
 ## User and Goal
 
@@ -33,8 +33,8 @@ Because the intended action is directly editable, the student does not need to g
 
 The student reviews the suggested reminder and can choose between:
 
-- **Date only:** Receive a notification at 9:00 AM on the selected date.
-- **Date and time:** Receive a notification at a specific time.
+- **Date only:** Set a reminder for a selected calendar date.
+- **Date and time:** Set a reminder for a specific date and time.
 - **No reminder:** Create the task without scheduling a notification.
 
 The student can adjust the suggested date and time before saving.

@@ -17,7 +17,6 @@ The public project repository contains the SnapBack implementation and the follo
 
 [Updated User Journey](design/user-journey.md)
 
-[Screen Recording](https://youtu.be/s4aHYLSu6bU)
 
 **Deployed application:** https://snapback.mit-sdg.dev
 
@@ -159,3 +158,8 @@ tests/compositions/ Application composition and persistence tests
 tests/security/     Login rate-limiting tests
 design/             Concept and application specifications
 ```
+## Project Materials
+
+- [Deployed Application](https://snapback.mit-sdg.dev)
+- [Final Design Summary](design/final-design.md)
+- [Final Demo Video](https://youtu.be/uEV34JdPQ58)
