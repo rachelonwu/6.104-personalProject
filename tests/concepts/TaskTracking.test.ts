@@ -40,6 +40,7 @@ describe("TaskTracking", () => {
     });
 
     concept.edit({
+      owner: "studentA",
       task,
       description: "Prepare for and attend career fair",
     });
@@ -60,7 +61,7 @@ describe("TaskTracking", () => {
 
     const reminderAt = "2026-10-21T22:00:00.000Z";
 
-    concept.setReminder({ task, reminderAt, reminderDateOnly: false });
+    concept.setReminder({ owner: "studentA", task, reminderAt, reminderDateOnly: false });
 
     expect(concept._get({ task })[0]?.reminderAt).toBe(reminderAt);
   });
@@ -75,12 +76,14 @@ describe("TaskTracking", () => {
     });
 
     concept.setReminder({
+      owner: "studentA",
       task,
       reminderAt: "2026-10-21T22:00:00.000Z",
     reminderDateOnly: false,
     });
 
     concept.setReminder({
+      owner: "studentA",
       task,
       reminderAt: "2026-10-22T18:00:00.000Z",
     reminderDateOnly: false,
@@ -101,12 +104,13 @@ describe("TaskTracking", () => {
     });
 
     concept.setReminder({
+      owner: "studentA",
       task,
       reminderAt: "2026-10-21T22:00:00.000Z",
     reminderDateOnly: false,
     });
 
-    concept.setReminder({ task, reminderAt: null, reminderDateOnly: false });
+    concept.setReminder({ owner: "studentA", task, reminderAt: null, reminderDateOnly: false });
 
     expect(concept._get({ task })[0]?.reminderAt).toBeNull();
   });
@@ -122,6 +126,7 @@ describe("TaskTracking", () => {
 
     expect(() =>
       concept.setReminder({
+      owner: "studentA",
         task,
         reminderAt: "not-a-date",
         reminderDateOnly: false,
@@ -130,6 +135,7 @@ describe("TaskTracking", () => {
 
     expect(() =>
       concept.setReminder({
+      owner: "studentA",
         task,
         reminderAt: "2026-02-30T22:00:00.000Z",
         reminderDateOnly: false,
@@ -144,6 +150,7 @@ describe("TaskTracking", () => {
 
     expect(() =>
       concept.setReminder({
+      owner: "studentA",
         task: "missing-task",
         reminderAt: "2026-10-21T22:00:00.000Z",
         reminderDateOnly: false,
@@ -160,7 +167,7 @@ describe("TaskTracking", () => {
       description: "Attend career fair",
     });
 
-    concept.complete({ task });
+    concept.complete({ owner: "studentA", task });
 
     expect(concept._get({ task })[0]?.completed).toBe(true);
   });
@@ -174,13 +181,13 @@ describe("TaskTracking", () => {
       description: "Attend career fair",
     });
 
-    concept.complete({ task });
+    concept.complete({ owner: "studentA", task });
     expect(concept._get({ task })[0]?.completed).toBe(true);
 
-    concept.reopen({ task });
+    concept.reopen({ owner: "studentA", task });
     expect(concept._get({ task })[0]?.completed).toBe(false);
 
-    concept.complete({ task });
+    concept.complete({ owner: "studentA", task });
     expect(concept._get({ task })[0]?.completed).toBe(true);
   });
 
@@ -193,7 +200,7 @@ describe("TaskTracking", () => {
       description: "Attend career fair",
     });
 
-    concept.remove({ task });
+    concept.remove({ owner: "studentA", task });
 
     expect(concept._get({ task })).toEqual([]);
   });
@@ -203,21 +210,22 @@ describe("TaskTracking", () => {
 
     expect(() =>
       concept.edit({
+      owner: "studentA",
         task: "missing-task",
         description: "Updated description",
       }),
     ).toThrow(TaskNotFound);
 
     expect(() =>
-      concept.complete({ task: "missing-task" }),
+      concept.complete({ owner: "studentA", task: "missing-task" }),
     ).toThrow(TaskNotFound);
 
     expect(() =>
-      concept.reopen({ task: "missing-task" }),
+      concept.reopen({ owner: "studentA", task: "missing-task" }),
     ).toThrow(TaskNotFound);
 
     expect(() =>
-      concept.remove({ task: "missing-task" }),
+      concept.remove({ owner: "studentA", task: "missing-task" }),
     ).toThrow(TaskNotFound);
   });
 
@@ -275,13 +283,13 @@ describe("TaskTracking", () => {
     });
     const reminderAt = "2026-11-01T13:00:00.000Z";
 
-    concept.setReminder({ task, reminderAt, reminderDateOnly: true });
+    concept.setReminder({ owner: "studentA", task, reminderAt, reminderDateOnly: true });
     expect(concept._get({ task })[0]).toMatchObject({
       reminderAt,
       reminderDateOnly: true,
     });
 
-    concept.setReminder({ task, reminderAt: null, reminderDateOnly: false });
+    concept.setReminder({ owner: "studentA", task, reminderAt: null, reminderDateOnly: false });
     expect(concept._get({ task })[0]).toMatchObject({
       reminderAt: null,
       reminderDateOnly: false,
@@ -297,7 +305,7 @@ describe("TaskTracking", () => {
     });
 
     expect(() =>
-      concept.setReminder({ task, reminderAt: null, reminderDateOnly: true }),
+      concept.setReminder({ owner: "studentA", task, reminderAt: null, reminderDateOnly: true }),
     ).toThrow(InvalidReminder);
     expect(concept._get({ task })[0]).toMatchObject({
       reminderAt: null,
@@ -313,10 +321,10 @@ describe("TaskTracking", () => {
       description: "Submit assignment",
     });
     const reminderAt = "2026-11-01T13:00:00.000Z";
-    concept.setReminder({ task, reminderAt, reminderDateOnly: true });
-    concept.edit({ task, description: "Submit final assignment" });
-    concept.complete({ task });
-    concept.reopen({ task });
+    concept.setReminder({ owner: "studentA", task, reminderAt, reminderDateOnly: true });
+    concept.edit({ owner: "studentA", task, description: "Submit final assignment" });
+    concept.complete({ owner: "studentA", task });
+    concept.reopen({ owner: "studentA", task });
 
     expect(concept._get({ task })[0]).toMatchObject({
       description: "Submit final assignment",
@@ -326,4 +334,16 @@ describe("TaskTracking", () => {
     });
   });
 
+
+  test("mutations reject a different owner without changing task state", () => {
+    const concept = new TaskTrackingConcept(() => "task-001");
+    const { task } = concept.create({ owner: "studentA", source: "inference-001", description: "Original" });
+    const before = concept._get({ task });
+    expect(() => concept.edit({ task, owner: "studentB", description: "Changed" })).toThrow(TaskNotFound);
+    expect(() => concept.complete({ task, owner: "studentB" })).toThrow(TaskNotFound);
+    expect(() => concept.reopen({ task, owner: "studentB" })).toThrow(TaskNotFound);
+    expect(() => concept.setReminder({ task, owner: "studentB", reminderAt: null, reminderDateOnly: false })).toThrow(TaskNotFound);
+    expect(() => concept.remove({ task, owner: "studentB" })).toThrow(TaskNotFound);
+    expect(concept._get({ task })).toEqual(before);
+  });
 });

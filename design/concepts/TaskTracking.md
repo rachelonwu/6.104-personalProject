@@ -43,6 +43,7 @@ a set of Tasks with
 
 ## Actions
 
+
 ```actions
 create(owner: User, source: Source, description: String) : returns (task: Task)
   where true
@@ -50,52 +51,52 @@ create(owner: User, source: Source, description: String) : returns (task: Task)
     add a new task with owner, source, description, completed false, reminderAt null, and reminderDateOnly false
     returns task
 
-edit(task: Task, description: String) : returns ()
-  where task is in Tasks
+edit(task: Task, owner: User, description: String) : returns ()
+  where task is in Tasks and task's owner is owner
   then
     update task's description to description
     returns
-  where task is not in Tasks
+  where task is not in Tasks or task's owner is not owner
   then
     refuses TASK_NOT_FOUND "The task does not exist."
 
-setReminder(task: Task, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly) : returns ()
-  where task is in Tasks and reminderAt is a valid UTC ISO 8601 timestamp or null, reminderDateOnly is a Boolean, and reminderDateOnly is false when reminderAt is null
+setReminder(task: Task, owner: User, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly) : returns ()
+  where task is in Tasks and task's owner is owner and reminderAt is a valid UTC ISO 8601 timestamp or null, reminderDateOnly is a Boolean, and reminderDateOnly is false when reminderAt is null
   then
     update task's reminderAt to reminderAt
     update task's reminderDateOnly to reminderDateOnly
     returns
-  where task is not in Tasks
+  where task is not in Tasks or task's owner is not owner
   then
     refuses TASK_NOT_FOUND "The task does not exist."
   where reminderAt is not a valid UTC ISO 8601 timestamp or null, or reminderDateOnly is not a Boolean, or reminderDateOnly is true when reminderAt is null
   then
     refuses INVALID_REMINDER "Reminder must have a valid timestamp and reminder type."
 
-complete(task: Task) : returns ()
-  where task is in Tasks
+complete(task: Task, owner: User) : returns ()
+  where task is in Tasks and task's owner is owner
   then
     update task's completed to true
     returns
-  where task is not in Tasks
+  where task is not in Tasks or task's owner is not owner
   then
     refuses TASK_NOT_FOUND "The task does not exist."
 
-reopen(task: Task) : returns ()
-  where task is in Tasks
+reopen(task: Task, owner: User) : returns ()
+  where task is in Tasks and task's owner is owner
   then
     update task's completed to false
     returns
-  where task is not in Tasks
+  where task is not in Tasks or task's owner is not owner
   then
     refuses TASK_NOT_FOUND "The task does not exist."
 
-remove(task: Task) : returns ()
-  where task is in Tasks
+remove(task: Task, owner: User) : returns ()
+  where task is in Tasks and task's owner is owner
   then
     remove task from Tasks
     returns
-  where task is not in Tasks
+  where task is not in Tasks or task's owner is not owner
   then
     refuses TASK_NOT_FOUND "The task does not exist."
 ```

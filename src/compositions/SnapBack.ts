@@ -18,11 +18,11 @@ const { ScreenshotStoring, IntentionInferring } = concepts;
  */
 const ConfirmInference = endpoint(
   "/inferences/confirm",
-  ({ inference, screenshot }) =>
-    receive({ inference }).then(
+  ({ inference, screenshot, owner }) =>
+    receive({ inference, owner }).then(
       where(
         IntentionInferring._get({ inference }).is({ screenshot }),
-        ScreenshotStoring._get({ screenshot }),
+        ScreenshotStoring._get({ screenshot }).is({ owner }),
       )
         .then(IntentionInferring.confirm({ inference }))
         .then(respond({ confirmed: inference }))
@@ -30,7 +30,7 @@ const ConfirmInference = endpoint(
 
       where(
         IntentionInferring._get({ inference }).is({ screenshot }),
-        no(ScreenshotStoring._get({ screenshot })),
+        no(ScreenshotStoring._get({ screenshot }).is({ owner })),
       )
         .then(respond({ error: "SCREENSHOT_NOT_FOUND" }))
         .named("screenshot-missing"),
@@ -40,7 +40,7 @@ const ConfirmInference = endpoint(
         .named("inference-missing"),
     ),
   {
-    input: { required: ["inference"] },
+    input: { required: ["inference", "owner"] },
     validators: {
       input: confirmInferenceInput,
       output: confirmInferenceOutput,

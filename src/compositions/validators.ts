@@ -8,7 +8,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export const confirmInferenceInput: EndpointValidator = (value) => {
   if (
     !isRecord(value) ||
-    Object.keys(value).length !== 1 ||
+    Object.keys(value).length !== 2 ||
+    typeof value.owner !== "string" ||
+    value.owner.length === 0 ||
+    value.owner.length > 128 ||
     typeof value.inference !== "string" ||
     value.inference.length === 0 ||
     value.inference.length > 128
@@ -100,14 +103,20 @@ export const taskReminderInput: EndpointValidator = (value) => {
 };
 
 export const taskUpdatedOutput: EndpointValidator = (value) => {
-  if (!isRecord(value) || !hasExactKeys(value, ["updated"]) || !isId(value.updated)) {
+  if (!isRecord(value) || !(
+    (hasExactKeys(value, ["updated"]) && isId(value.updated)) ||
+    (hasExactKeys(value, ["error"]) && value.error === "TASK_NOT_FOUND")
+  )) {
     return { ok: false, detail: "response must contain an updated task identifier" };
   }
   return { ok: true };
 };
 
 export const taskRemovedOutput: EndpointValidator = (value) => {
-  if (!isRecord(value) || !hasExactKeys(value, ["removed"]) || !isId(value.removed)) {
+  if (!isRecord(value) || !(
+    (hasExactKeys(value, ["removed"]) && isId(value.removed)) ||
+    (hasExactKeys(value, ["error"]) && value.error === "TASK_NOT_FOUND")
+  )) {
     return { ok: false, detail: "response must contain a removed task identifier" };
   }
   return { ok: true };

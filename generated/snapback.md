@@ -38,7 +38,7 @@ Defined in [ScreenshotStoring](../design/concepts/ScreenshotStoring.md), line 1.
 #### Actions
 
 - `upload(owner: User, imageRef: String, uploadedAt: String) : returns (screenshot: Screenshot)`
-- `remove(screenshot: Screenshot) : returns ()`
+- `remove(screenshot: Screenshot, owner: User) : returns ()`
   - Refuses `SCREENSHOT_NOT_FOUND`: The screenshot does not exist.
 
 #### Queries
@@ -57,16 +57,16 @@ Defined in [TaskTracking](../design/concepts/TaskTracking.md), line 2.
 #### Actions
 
 - `create(owner: User, source: Source, description: String) : returns (task: Task)`
-- `edit(task: Task, description: String) : returns ()`
+- `edit(task: Task, owner: User, description: String) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
-- `setReminder(task: Task, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly) : returns ()`
+- `setReminder(task: Task, owner: User, reminderAt: ReminderTime, reminderDateOnly: ReminderDateOnly) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
   - Refuses `INVALID_REMINDER`: Reminder must have a valid timestamp and reminder type.
-- `complete(task: Task) : returns ()`
+- `complete(task: Task, owner: User) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
-- `reopen(task: Task) : returns ()`
+- `reopen(task: Task, owner: User) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
-- `remove(task: Task) : returns ()`
+- `remove(task: Task, owner: User) : returns ()`
   - Refuses `TASK_NOT_FOUND`: The task does not exist.
 
 #### Queries
@@ -142,7 +142,7 @@ Authored path: `SnapBack.Inferences.ConfirmInference`.
 - Covered by [SnapBack](../design/compositions/SnapBack.md), line 12.
 
 ```reaction
-when RequestBoundary.request (inference, path: "/inferences/confirm", requestId)
+when RequestBoundary.request (inference, owner, path: "/inferences/confirm", requestId)
 where
   no IntentionInferring._get (inference)
 then
@@ -156,10 +156,10 @@ Authored path: `SnapBack.Inferences.ConfirmInference`.
 - Covered by [SnapBack](../design/compositions/SnapBack.md), line 12.
 
 ```reaction
-when RequestBoundary.request (inference, path: "/inferences/confirm", requestId)
+when RequestBoundary.request (inference, owner, path: "/inferences/confirm", requestId)
 where
   IntentionInferring._get (inference) has (screenshot)
-  no ScreenshotStoring._get (screenshot)
+  no ScreenshotStoring._get (screenshot) has (owner)
 then
   RequestBoundary.respond (error: "SCREENSHOT_NOT_FOUND", requestId)
 ```
@@ -171,10 +171,10 @@ Authored path: `SnapBack.Inferences.ConfirmInference`.
 - Covered by [SnapBack](../design/compositions/SnapBack.md), line 12.
 
 ```reaction
-when RequestBoundary.request (inference, path: "/inferences/confirm", requestId)
+when RequestBoundary.request (inference, owner, path: "/inferences/confirm", requestId)
 where
   IntentionInferring._get (inference) has (screenshot)
-  ScreenshotStoring._get (screenshot)
+  ScreenshotStoring._get (screenshot) has (owner)
 then
   IntentionInferring.confirm (inference)
 ```
@@ -188,7 +188,7 @@ Authored path: `SnapBack.Inferences.ConfirmInference`.
 ```reaction
 when IntentionInferring.confirm (inference), asked by SnapBack.Inferences.ConfirmInference:source-exists
 where
-  earlier, RequestBoundary.request (inference, path: "/inferences/confirm", requestId)
+  earlier, RequestBoundary.request (inference, owner, path: "/inferences/confirm", requestId)
 then
   RequestBoundary.respond (confirmed: inference, requestId)
 ```
@@ -215,10 +215,8 @@ Authored path: `TaskManagement.Tasks.CompleteTask`.
 
 ```reaction
 when RequestBoundary.request (owner, path: "/tasks/complete", requestId, task)
-where
-  TaskTracking._get (task) has (owner)
 then
-  TaskTracking.complete (task)
+  TaskTracking.complete (owner, task)
 ```
 
 ### TaskManagement.Tasks.CompleteTask#2
@@ -228,7 +226,7 @@ Authored path: `TaskManagement.Tasks.CompleteTask`.
 - Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 15.
 
 ```reaction
-when TaskTracking.complete (task), asked by TaskManagement.Tasks.CompleteTask
+when TaskTracking.complete (owner, task), asked by TaskManagement.Tasks.CompleteTask
 where
   earlier, RequestBoundary.request (owner, path: "/tasks/complete", requestId, task)
 then
@@ -243,10 +241,8 @@ Authored path: `TaskManagement.Tasks.EditTask`.
 
 ```reaction
 when RequestBoundary.request (description, owner, path: "/tasks/edit", requestId, task)
-where
-  TaskTracking._get (task) has (owner)
 then
-  TaskTracking.edit (description, task)
+  TaskTracking.edit (description, owner, task)
 ```
 
 ### TaskManagement.Tasks.EditTask#2
@@ -256,7 +252,7 @@ Authored path: `TaskManagement.Tasks.EditTask`.
 - Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 14.
 
 ```reaction
-when TaskTracking.edit (description, task), asked by TaskManagement.Tasks.EditTask
+when TaskTracking.edit (description, owner, task), asked by TaskManagement.Tasks.EditTask
 where
   earlier, RequestBoundary.request (description, owner, path: "/tasks/edit", requestId, task)
 then
@@ -271,10 +267,8 @@ Authored path: `TaskManagement.Tasks.RemoveTask`.
 
 ```reaction
 when RequestBoundary.request (owner, path: "/tasks/remove", requestId, task)
-where
-  TaskTracking._get (task) has (owner)
 then
-  TaskTracking.remove (task)
+  TaskTracking.remove (owner, task)
 ```
 
 ### TaskManagement.Tasks.RemoveTask#2
@@ -284,7 +278,7 @@ Authored path: `TaskManagement.Tasks.RemoveTask`.
 - Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 18.
 
 ```reaction
-when TaskTracking.remove (task), asked by TaskManagement.Tasks.RemoveTask
+when TaskTracking.remove (owner, task), asked by TaskManagement.Tasks.RemoveTask
 where
   earlier, RequestBoundary.request (owner, path: "/tasks/remove", requestId, task)
 then
@@ -299,10 +293,8 @@ Authored path: `TaskManagement.Tasks.ReopenTask`.
 
 ```reaction
 when RequestBoundary.request (owner, path: "/tasks/reopen", requestId, task)
-where
-  TaskTracking._get (task) has (owner)
 then
-  TaskTracking.reopen (task)
+  TaskTracking.reopen (owner, task)
 ```
 
 ### TaskManagement.Tasks.ReopenTask#2
@@ -312,7 +304,7 @@ Authored path: `TaskManagement.Tasks.ReopenTask`.
 - Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 16.
 
 ```reaction
-when TaskTracking.reopen (task), asked by TaskManagement.Tasks.ReopenTask
+when TaskTracking.reopen (owner, task), asked by TaskManagement.Tasks.ReopenTask
 where
   earlier, RequestBoundary.request (owner, path: "/tasks/reopen", requestId, task)
 then
@@ -327,10 +319,8 @@ Authored path: `TaskManagement.Tasks.SetTaskReminder`.
 
 ```reaction
 when RequestBoundary.request (owner, path: "/tasks/reminder", reminderAt, reminderDateOnly, requestId, task)
-where
-  TaskTracking._get (task) has (owner)
 then
-  TaskTracking.setReminder (reminderAt, reminderDateOnly, task)
+  TaskTracking.setReminder (owner, reminderAt, reminderDateOnly, task)
 ```
 
 ### TaskManagement.Tasks.SetTaskReminder#2
@@ -340,7 +330,7 @@ Authored path: `TaskManagement.Tasks.SetTaskReminder`.
 - Covered by [TaskManagement](../design/compositions/TaskManagement.md), line 17.
 
 ```reaction
-when TaskTracking.setReminder (reminderAt, reminderDateOnly, task), asked by TaskManagement.Tasks.SetTaskReminder
+when TaskTracking.setReminder (owner, reminderAt, reminderDateOnly, task), asked by TaskManagement.Tasks.SetTaskReminder
 where
   earlier, RequestBoundary.request (owner, path: "/tasks/reminder", reminderAt, reminderDateOnly, requestId, task)
 then
@@ -354,7 +344,7 @@ object or lacks a required key. The response uses `INVALID_INPUT` and names
 the path or missing key. A declared default fills an absent key. Endpoints
 not listed here have no explicit input contract.
 
-- `/inferences/confirm` — requires `inference`
+- `/inferences/confirm` — requires `inference`, `owner`
 - `/tasks/complete` — requires `owner`, `task`
 - `/tasks/edit` — requires `owner`, `task`, `description`
 - `/tasks/reminder` — requires `owner`, `task`, `reminderAt`, `reminderDateOnly`

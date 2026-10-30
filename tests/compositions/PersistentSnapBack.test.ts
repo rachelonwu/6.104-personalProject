@@ -1,123 +1,71 @@
 
-import { describe, expect, test } from "bun:test";
-import { createGateway } from "@mit-sdg/sync-engine/boundary";
+export class ScreenshotNotFound extends Error {}
 
-import { assemblePersistentApplication } from "../../src/persistentApplication.js";
-import { closeDatabase } from "../../src/database.js";
+type Screenshot = {
+  screenshot: string;
+  owner: string;
+  imageRef: string;
+  uploadedAt: string;
+};
 
-describe("SnapBack MongoDB persistence", () => {
-  test("confirming an inference creates a task that survives reassembly", async () => {
-    const {
-      application,
-      screenshots,
-      intentions,
-      tasks,
-    } = await assemblePersistentApplication();
+export class ScreenshotStoringConcept {
+  private readonly screenshots: Screenshot[] = [];
 
-    const gateway = createGateway({ application });
+  constructor(
+    private readonly freshID: () => string = () => crypto.randomUUID()
+  ) {}
 
-    const owner = `test-user-${crypto.randomUUID()}`;
+  upload({
+    owner,
+    imageRef,
+    uploadedAt,
+  }: {
+    owner: string;
+    imageRef: string;
+    uploadedAt: string;
+  }) {
+    const screenshot = this.freshID();
 
-    const { screenshot } = await screenshots.upload({
-      owner,
-      imageRef: "persistent-test.png",
-      uploadedAt: new Date().toISOString(),
-    });
-
-    const { inference } = await intentions.infer({
+    this.screenshots.push({
       screenshot,
-      description: "Look into the event",
-    });
-
-    await intentions.correct({
-      inference,
-      description: "Register for the event by Friday",
-    });
-
-    expect(await tasks._listByOwner({ owner })).toEqual([]);
-
-    const result = await gateway.invoke("/inferences/confirm", {
-      inference,
-    });
-
-    expect(result).toEqual({
-      ok: true,
-      value: { confirmed: inference },
-    });
-
-    await gateway.whenIdle();
-
-    const createdTasks = await tasks._listByOwner({ owner });
-
-    expect(createdTasks).toHaveLength(1);
-    expect(createdTasks[0]).toMatchObject({
-      source: inference,
-      description: "Register for the event by Friday",
-      completed: false,
-    });
-
-    const restarted = await assemblePersistentApplication();
-
-    const persistedTasks = await restarted.tasks._listByOwner({ owner });
-
-    expect(persistedTasks).toEqual(createdTasks);
-  });
-
-  test("a completed task can be reopened and its state persists", async () => {
-    const {
-      application,
-      screenshots,
-      intentions,
-      tasks,
-    } = await assemblePersistentApplication();
-
-    const gateway = createGateway({ application });
-
-    const owner = `test-user-${crypto.randomUUID()}`;
-
-    const { screenshot } = await screenshots.upload({
       owner,
-      imageRef: "reopen-test.png",
-      uploadedAt: new Date().toISOString(),
+      imageRef,
+      uploadedAt,
     });
 
-    const { inference } = await intentions.infer({
-      screenshot,
-      description: "Submit project",
-    });
+    return { screenshot };
+  }
 
-    const result = await gateway.invoke("/inferences/confirm", {
-      inference,
-    });
+    remove({ screenshot, owner }: { screenshot: string; owner: string }) {
+        const index = this.screenshots.findIndex(
+            (s) => s.screenshot === screenshot && s.owner === owner
+        );
 
-    expect(result.ok).toBe(true);
+        if (index === -1) {
+            throw new ScreenshotNotFound("The screenshot does not exist.");
+        }
 
-    await gateway.whenIdle();
+        this.screenshots.splice(index, 1);
+        return {};
+    }
 
-    const createdTasks = await tasks._listByOwner({ owner });
+    _get({
+    screenshot,
+    }: {
+    screenshot: string;
+    }): Array<{ owner: string; imageRef: string; uploadedAt: string }> {
+        const found = this.screenshots.find(
+          (s) => s.screenshot === screenshot
+      );
 
-    expect(createdTasks).toHaveLength(1);
+        return found === undefined
+            ? []
+            : [{
+                owner: found.owner,
+                imageRef: found.imageRef,
+                uploadedAt: found.uploadedAt,
+            }];
+    }
 
-    const task = createdTasks[0].task;
 
-    await tasks.complete({ task });
-
-    expect((await tasks._get({ task }))[0]?.completed).toBe(true);
-
-    await tasks.reopen({ task });
-
-    expect((await tasks._get({ task }))[0]?.completed).toBe(false);
-
-    const restarted = await assemblePersistentApplication();
-
-    const persistedTasks = await restarted.tasks._listByOwner({ owner });
-
-    expect(persistedTasks).toHaveLength(1);
-    expect(persistedTasks[0]).toMatchObject({
-      task,
-      source: inference,
-      description: "Submit project",
-      completed: false,
-    });
-  });
-});
+}

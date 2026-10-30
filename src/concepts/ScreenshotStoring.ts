@@ -36,9 +36,9 @@ export class ScreenshotStoringConcept {
     return { screenshot };
   }
 
-    remove({ screenshot }: { screenshot: string }) {
+    remove({ screenshot, owner }: { screenshot: string; owner: string }) {
         const index = this.screenshots.findIndex(
-            (s) => s.screenshot === screenshot
+            (s) => s.screenshot === screenshot && s.owner === owner
         );
 
         if (index === -1) {
@@ -55,7 +55,7 @@ export class ScreenshotStoringConcept {
     screenshot: string;
     }): Array<{ owner: string; imageRef: string; uploadedAt: string }> {
         const found = this.screenshots.find(
-            (s) => s.screenshot === screenshot
+          (s) => s.screenshot === screenshot
         );
 
         return found === undefined

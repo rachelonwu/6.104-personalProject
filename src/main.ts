@@ -777,7 +777,7 @@ Bun.serve({
         }
         const result = await gateway.invoke(
           "/inferences/confirm",
-          { inference: body.inference },
+          { inference: body.inference, owner },
         );
         if (!result.ok) {
           return json({ error: result.error }, 400);

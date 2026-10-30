@@ -48,7 +48,7 @@ describe("SnapBack composition", () => {
     expect(tasks._listByOwner({ owner: "studentA" })).toEqual([]);
 
     const result = await gateway.invoke("/inferences/confirm", {
-      inference,
+      inference, owner: "studentA",
     });
 
     expect(result).toEqual({
@@ -94,7 +94,7 @@ describe("SnapBack composition", () => {
     });
 
     const result = await gateway.invoke("/inferences/confirm", {
-      inference,
+      inference, owner: "studentA",
     });
 
     expect(result).toEqual({
@@ -130,10 +130,10 @@ describe("SnapBack composition", () => {
       description: "Attend the event",
     });
 
-    screenshots.remove({ screenshot });
+    screenshots.remove({ screenshot, owner: "studentA" });
 
     const result = await gateway.invoke("/inferences/confirm", {
-      inference,
+      inference, owner: "studentA",
     });
 
     expect(result).toEqual({
@@ -157,6 +157,17 @@ describe("SnapBack composition", () => {
     ]);
   });
 
+  test("a different owner cannot confirm an inference", async () => {
+    const { screenshots, intentions, tasks, gateway } = setup();
+    const { screenshot } = screenshots.upload({ owner: "studentA", imageRef: "private.png", uploadedAt: "2026-10-13T12:00:00Z" });
+    const { inference } = intentions.infer({ screenshot, description: "Private task" });
+    const result = await gateway.invoke("/inferences/confirm", { inference, owner: "studentB" }, { timeoutMs: 1000 });
+    expect(result).not.toEqual({ ok: true, value: { confirmed: inference } });
+    await gateway.whenIdle();
+    expect(tasks._listByOwner({ owner: "studentA" })).toEqual([]);
+    expect(intentions._get({ inference })[0].status).toBe("pending");
+  });
+
   test("confirming an inference twice does not create duplicate tasks", async () => {
     const { screenshots, intentions, tasks, gateway } = setup();
 
@@ -172,7 +183,7 @@ describe("SnapBack composition", () => {
     });
 
     const firstResult = await gateway.invoke("/inferences/confirm", {
-      inference,
+      inference, owner: "studentA",
     });
 
     expect(firstResult).toEqual({
@@ -187,7 +198,7 @@ describe("SnapBack composition", () => {
 
     const secondResult = await gateway.invoke(
       "/inferences/confirm",
-      { inference },
+      { inference, owner: "studentA" },
       { timeoutMs: 1000 },
     );
 

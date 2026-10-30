@@ -15,6 +15,7 @@ export type SnapBackWire = {
   "/inferences/confirm": {
     input: {
       "inference": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["IntentionInferring"]["_get"]>[0], ["inference"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["IntentionInferring"]["confirm"]>[0], ["inference"]>]>>;
+      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["ScreenshotStoring"]["_get"]>>>, ["owner"]>>;
     };
     output: {
       "confirmed": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["IntentionInferring"]["confirm"]>[0], ["inference"]>>;
@@ -23,7 +24,7 @@ export type SnapBackWire = {
   };
   "/tasks/complete": {
     input: {
-      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "owner": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["complete"]>[0], ["owner"]>>;
       "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["complete"]>[0], ["task"]>>;
     };
     output: {
@@ -34,7 +35,7 @@ export type SnapBackWire = {
   "/tasks/edit": {
     input: {
       "description": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["edit"]>[0], ["description"]>>;
-      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "owner": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["edit"]>[0], ["owner"]>>;
       "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["edit"]>[0], ["task"]>>;
     };
     output: {
@@ -44,7 +45,7 @@ export type SnapBackWire = {
   };
   "/tasks/reminder": {
     input: {
-      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "owner": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["owner"]>>;
       "reminderAt": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["reminderAt"]>>;
       "reminderDateOnly": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["reminderDateOnly"]>>;
       "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["setReminder"]>[0], ["task"]>>;
@@ -56,7 +57,7 @@ export type SnapBackWire = {
   };
   "/tasks/remove": {
     input: {
-      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "owner": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["remove"]>[0], ["owner"]>>;
       "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["remove"]>[0], ["task"]>>;
     };
     output: {
@@ -66,7 +67,7 @@ export type SnapBackWire = {
   };
   "/tasks/reopen": {
     input: {
-      "owner": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["_get"]>>>, ["owner"]>>;
+      "owner": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["reopen"]>[0], ["owner"]>>;
       "task": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["TaskTracking"]["reopen"]>[0], ["task"]>>;
     };
     output: {

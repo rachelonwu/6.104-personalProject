@@ -63,12 +63,14 @@ export class TaskTrackingConcept {
 
   edit({
     task,
+    owner,
     description,
   }: {
     task: string;
+    owner: string;
     description: string;
   }) {
-    const found = this.tasks.find((t) => t.task === task);
+    const found = this.tasks.find((t) => t.task === task && t.owner === owner);
 
     if (found === undefined) {
       throw new TaskNotFound("The task does not exist.");
@@ -80,14 +82,16 @@ export class TaskTrackingConcept {
 
   setReminder({
   task,
+  owner,
   reminderAt,
   reminderDateOnly,
 }: {
   task: string;
+  owner: string;
   reminderAt: string | null;
   reminderDateOnly: boolean;
 }) {
-  const found = this.tasks.find((t) => t.task === task);
+  const found = this.tasks.find((t) => t.task === task && t.owner === owner);
 
   if (found === undefined) {
     throw new TaskNotFound("The task does not exist.");
@@ -110,8 +114,8 @@ export class TaskTrackingConcept {
   return {};
 }
 
-  complete({ task }: { task: string }) {
-    const found = this.tasks.find((t) => t.task === task);
+  complete({ task, owner }: { task: string; owner: string }) {
+    const found = this.tasks.find((t) => t.task === task && t.owner === owner);
 
     if (found === undefined) {
       throw new TaskNotFound("The task does not exist.");
@@ -121,8 +125,8 @@ export class TaskTrackingConcept {
     return {};
   }
 
-  reopen({ task }: { task: string }) {
-    const found = this.tasks.find((t) => t.task === task);
+  reopen({ task, owner }: { task: string; owner: string }) {
+    const found = this.tasks.find((t) => t.task === task && t.owner === owner);
 
     if (found === undefined) {
       throw new TaskNotFound("The task does not exist.");
@@ -132,8 +136,8 @@ export class TaskTrackingConcept {
     return {};
   }
 
-  remove({ task }: { task: string }) {
-    const index = this.tasks.findIndex((t) => t.task === task);
+  remove({ task, owner }: { task: string; owner: string }) {
+    const index = this.tasks.findIndex((t) => t.task === task && t.owner === owner);
 
     if (index === -1) {
       throw new TaskNotFound("The task does not exist.");

@@ -33,12 +33,12 @@ upload(owner: User, imageRef: String, uploadedAt: String) : returns (screenshot:
     add a new screenshot with owner, imageRef, and uploadedAt
     returns screenshot
 
-remove(screenshot: Screenshot) : returns ()
-  where screenshot is in Screenshots
+remove(screenshot: Screenshot, owner: User) : returns ()
+  where screenshot is in Screenshots and screenshot.owner is owner
   then
     remove screenshot from Screenshots
     returns
-  where screenshot is not in Screenshots
+  where screenshot is not in Screenshots or screenshot.owner is not owner
   then
     refuses SCREENSHOT_NOT_FOUND "The screenshot does not exist."
 ```

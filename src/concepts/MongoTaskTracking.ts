@@ -68,13 +68,15 @@ export class MongoTaskTrackingConcept {
 
   async edit({
     task,
+    owner,
     description,
   }: {
     task: string;
+    owner: string;
     description: string;
   }) {
     const result = await this.tasks.updateOne(
-      { task },
+      { task, owner },
       { $set: { description } },
     );
 
@@ -87,10 +89,12 @@ export class MongoTaskTrackingConcept {
 
   async setReminder({
     task,
+    owner,
     reminderAt,
     reminderDateOnly,
   }: {
     task: string;
+    owner: string;
     reminderAt: string | null;
     reminderDateOnly: boolean;
   }) {
@@ -106,7 +110,7 @@ export class MongoTaskTrackingConcept {
     }
 
     const result = await this.tasks.updateOne(
-      { task },
+      { task, owner },
       {
         $set: {
           reminderAt,
@@ -122,9 +126,9 @@ export class MongoTaskTrackingConcept {
     return {};
   }
 
-  async complete({ task }: { task: string }) {
+  async complete({ task, owner }: { task: string; owner: string }) {
     const result = await this.tasks.updateOne(
-      { task },
+      { task, owner },
       { $set: { completed: true } },
     );
 
@@ -135,9 +139,9 @@ export class MongoTaskTrackingConcept {
     return {};
   }
 
-  async reopen({ task }: { task: string }) {
+  async reopen({ task, owner }: { task: string; owner: string }) {
     const result = await this.tasks.updateOne(
-      { task },
+      { task, owner },
       { $set: { completed: false } },
     );
 
@@ -148,8 +152,8 @@ export class MongoTaskTrackingConcept {
     return {};
   }
 
-  async remove({ task }: { task: string }) {
-    const result = await this.tasks.deleteOne({ task });
+  async remove({ task, owner }: { task: string; owner: string }) {
+    const result = await this.tasks.deleteOne({ task, owner });
 
     if (result.deletedCount === 0) {
       throw new TaskNotFound("The task does not exist.");

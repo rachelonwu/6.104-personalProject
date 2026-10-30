@@ -40,8 +40,8 @@ export class MongoScreenshotStoringConcept {
     return { screenshot };
   }
 
-  async remove({ screenshot }: { screenshot: string }) {
-    const result = await this.screenshots.deleteOne({ screenshot });
+  async remove({ screenshot, owner }: { screenshot: string; owner: string }) {
+    const result = await this.screenshots.deleteOne({ screenshot, owner });
 
     if (result.deletedCount === 0) {
       throw new ScreenshotNotFound("The screenshot does not exist.");
